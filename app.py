@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - Tünd Qırmızı Dizayn, Çoxdilli Sistem və Auto-Bərpa (ParserError Fix)
+# Məqsəd: ASOIU IT Helpdesk AI - Genişləndirilmiş Kateqoriyalar və Sekməli İdarəetmə
 
 import streamlit as st
 import pandas as pd
@@ -32,24 +32,16 @@ st.markdown("""
     h1, h2, h3, p, label, .stMarkdown { color: #5c0000 !important; }
     
     .stButton>button, .stFormSubmitButton>button { 
-        background-color: #8b0000; 
-        color: #ffffff; 
-        border-radius: 25px; 
-        border: none; 
-        padding: 10px 24px; 
-        font-weight: bold; 
-        box-shadow: 0px 4px 6px rgba(139, 0, 0, 0.3); 
-        transition: 0.3s; 
-        width: 100%;
+        background-color: #8b0000; color: #ffffff; border-radius: 25px; border: none; padding: 10px 24px; font-weight: bold; box-shadow: 0px 4px 6px rgba(139, 0, 0, 0.3); transition: 0.3s; width: 100%;
     }
-    .stButton>button:hover, .stFormSubmitButton>button:hover { 
-        background-color: #4a0000; 
-        color: white; 
-    }
+    .stButton>button:hover, .stFormSubmitButton>button:hover { background-color: #4a0000; color: white; }
     
     .stTextArea textarea { resize: none !important; border: 2px solid #b30000; border-radius: 15px; background-color: #fffafb; color: #5c0000; }
     .stTextInput input, .stSelectbox select { border: 2px solid #b30000; border-radius: 15px; background-color: #fffafb; color: #5c0000; }
     div[data-testid="stAlert"] { background-color: #fff0f0; border-left: 5px solid #8b0000; border-radius: 12px; color: #5c0000; }
+    
+    /* Sekmələrin (Tabs) dizaynını gözəlləşdirmək üçün */
+    button[data-baseweb="tab"] { font-weight: bold; color: #8b0000 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -73,8 +65,36 @@ t = LANG[sel_lang]
 @st.cache_resource
 def initialize_system():
     os.makedirs('data', exist_ok=True)
-    if not os.path.exists('data/tickets.csv'):
-        pd.DataFrame([{"ticket_text": "Wi-Fi qoşulmur", "category": "Şəbəkə"}]).to_csv('data/tickets.csv', index=False)
+    
+    # 6 Kateqoriyanın olub-olmadığını yoxlayır. Yoxdursa, köhnə bazanı silib yenidən yaradır.
+    rebuild_needed = False
+    if os.path.exists('data/tickets.csv'):
+        df_check = pd.read_csv('data/tickets.csv')
+        if len(df_check['category'].unique()) < 6:
+            rebuild_needed = True
+    else:
+        rebuild_needed = True
+
+    if rebuild_needed:
+        network_issues = ["Wi-Fi qoşulmur", "İnternet zəifdir", "IP xətası", "Lan kabel qırılıb"]
+        hardware_issues = ["Noutbuk donur", "Proyektor işləmir", "Printer çap etmir", "RAM problemi"]
+        account_issues = ["Mailimə girə bilmirəm", "Parolu unutmuşam", "Hesab bloklanıb"]
+        software_issues = ["Office lisenziya xətası", "Antivirus xətası", "Windows dondu"]
+        security_issues = ["Kompüterə virus düşüb", "Spam maillər gəlir", "Fayllarım şifrələnib", "Qəribə pop-uplar açılır"]
+        database_issues = ["Məlumat bazasına qoşulmur", "SQL xətası verir", "Sistemdən məlumat silinib", "1C proqramı açılmır"]
+        
+        data = []
+        for _ in range(50):
+            data.append({"ticket_text": random.choice(network_issues), "category": "Şəbəkə"})
+            data.append({"ticket_text": random.choice(hardware_issues), "category": "Avadanlıq"})
+            data.append({"ticket_text": random.choice(account_issues), "category": "Hesab_Problemi"})
+            data.append({"ticket_text": random.choice(software_issues), "category": "Proqram_Təminatı"})
+            data.append({"ticket_text": random.choice(security_issues), "category": "Təhlükəsizlik"})
+            data.append({"ticket_text": random.choice(database_issues), "category": "Məlumat_Bazası"})
+        pd.DataFrame(data).to_csv('data/tickets.csv', index=False)
+        
+        if os.path.exists('helpdesk_classifier_model.pkl'):
+            os.remove('helpdesk_classifier_model.pkl')
 
     def train_new_model():
         df = pd.read_csv('data/tickets.csv')
@@ -98,11 +118,8 @@ model = initialize_system()
 USERS_FILE = "data/users_db.csv"
 TICKETS_FILE = "data/live_tickets.csv"
 
-# BAZALARIN ZƏDƏLƏNMƏSİNƏ QARŞI QORUMA MƏNTİQİ (HƏLL BURADADIR)
 def ensure_db_exists():
-    # İstifadəçi bazası
-    try:
-        pd.read_csv(USERS_FILE)
+    try: pd.read_csv(USERS_FILE)
     except Exception:
         pd.DataFrame([
             {"username": "kamran", "password": "admin", "role": "super_admin", "name": "Kamran Muradov", "dept": "Bütün_Sistem"},
@@ -110,11 +127,9 @@ def ensure_db_exists():
             {"username": "cavid", "password": "123", "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"}
         ]).to_csv(USERS_FILE, index=False)
 
-    # Biletlər (Sorğu) bazası - Köhnə formatı avtomatik silib yeniləyir
     try:
         df = pd.read_csv(TICKETS_FILE)
-        if "Status" not in df.columns:
-            raise ValueError("Köhnə format tapıldı.")
+        if "Status" not in df.columns: raise ValueError("Köhnə format tapıldı.")
     except Exception:
         pd.DataFrame(columns=["Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Məsul_Şəxs", "Status"]).to_csv(TICKETS_FILE, index=False)
 
@@ -138,7 +153,6 @@ if not st.session_state.logged_in:
                     login_user = st.text_input(t['user'])
                     login_pass = st.text_input(t['pass'], type="password")
                     submit_login = st.form_submit_button(t['login_btn'])
-                    
                     if submit_login:
                         users_df = pd.read_csv(USERS_FILE)
                         user_match = users_df[(users_df['username'] == login_user) & (users_df['password'] == login_pass)]
@@ -147,7 +161,6 @@ if not st.session_state.logged_in:
                             st.session_state.update({"logged_in": True, "username": u['username'], "role": u['role'], "name": u['name'], "dept": u['dept']})
                             st.rerun()
                         else: st.error("❌ Xəta / Error")
-                
                 if st.button(f"❓ {t['forgot']}"):
                     st.session_state.show_forgot_pass = True
                     st.rerun()
@@ -158,7 +171,6 @@ if not st.session_state.logged_in:
                     new_user = st.text_input(f"{t['user']} (Yeni):")
                     new_pass = st.text_input(f"{t['pass']} (Yeni):", type="password")
                     submit_signup = st.form_submit_button(t['signup_btn'])
-                    
                     if submit_signup:
                         pd.DataFrame([{"username": new_user, "password": new_pass, "role": "user", "name": new_name, "dept": "Yoxdur"}]).to_csv(USERS_FILE, mode='a', header=False, index=False)
                         st.success("✅ OK")
@@ -167,11 +179,9 @@ if not st.session_state.logged_in:
                 st.subheader("🔄 Şifrənin Yenilənməsi")
                 reset_user = st.text_input(t['user'])
                 new_pass = st.text_input(t['pass'], type="password")
-                
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1: submit_reset = st.form_submit_button("OK")
                 with col_btn2: back_btn = st.form_submit_button("⬅️ Back")
-                
                 if submit_reset:
                     df = pd.read_csv(USERS_FILE)
                     df.loc[df['username'] == reset_user, 'password'] = new_pass
@@ -196,23 +206,24 @@ else:
             st.rerun()
     st.markdown("---")
 
-    # Burada artıq xəta ola bilməz, yuxarıdakı funksiya qoruyur
     tickets_df = pd.read_csv(TICKETS_FILE)
 
     # --- USER PANELİ ---
     if st.session_state.role == "user":
         tab_new, tab_exam = st.tabs([f"📝 {t['new_ticket']}", f"🎓 {t['exam']}"])
-        
         with tab_new:
             col_main, col_stat = st.columns([3, 1])
             with col_main:
                 with st.form("ticket_form", clear_on_submit=True):
                     user_input = st.text_area(t['desc'], height=120)
                     submit_ticket = st.form_submit_button(t['send'])
-                    
                     if submit_ticket and user_input.strip():
                         pred = model.predict([user_input])[0]
-                        new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred, "Məsul_Şəxs": "Admin", "Status": "Açıq"}])
+                        # Yeni kateqoriyalar üçün işçi təyinatı (Şərti)
+                        agent_mapping = {"Şəbəkə": "Cavid Məmmədov", "Avadanlıq": "Orxan Əliyev", "Hesab_Problemi": "Aygün Həsənova", "Proqram_Təminatı": "Elvin Qasımov", "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi", "Məlumat_Bazası": "Baza Administratoru"}
+                        assigned_agent = agent_mapping.get(pred, "Ümumi Şöbə")
+                        
+                        new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred, "Məsul_Şəxs": assigned_agent, "Status": "Açıq"}])
                         new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
                         st.success(f"✅ Kateqoriya / Category: {pred}")
             with col_stat:
@@ -234,7 +245,6 @@ else:
                 q10 = st.radio("10. Active Directory harada istifadə olunur?", ["Oyunlarda", "İstifadəçi və kompüterlərin idarə edilməsində", "Dizaynda"])
 
                 submit_exam = st.form_submit_button("İmtahanı Bitir / Finish Exam")
-                
                 if submit_exam:
                     score = 0
                     if q1 == "İki cihazın eyni IP-yə malik olması": score += 1
@@ -255,19 +265,16 @@ else:
                         users_df.loc[users_df['username'] == st.session_state.username, 'dept'] = 'Ümumi_Dəstək'
                         users_df.to_csv(USERS_FILE, index=False)
                         st.success("🎉 TƏBRİKLƏR! Siz artıq Adminsiniz. Zəhmət olmasa sistemdən çıxıb yenidən daxil olun.")
-                    else:
-                        st.error("Təəssüf ki, kəsildiniz. Yenidən cəhd edin.")
+                    else: st.error("Təəssüf ki, kəsildiniz. Yenidən cəhd edin.")
 
     # --- ADMIN PANELİ ---
     elif st.session_state.role == "admin":
         st.title(f"🛠️ {t['admin_panel']}: {st.session_state.dept}")
         col_main, col_stat = st.columns([3, 1])
-        
         with col_main:
             my_tickets = tickets_df[(tickets_df["Kateqoriya"] == st.session_state.dept) & (tickets_df["Status"] == "Açıq")]
             st.write(f"### {t['open_tickets']}: {len(my_tickets)}")
             st.dataframe(my_tickets, use_container_width=True)
-            
             if not my_tickets.empty:
                 with st.form("close_ticket_form"):
                     close_id = st.selectbox("Həll edilən sorğunun indeksini seçin (Sol sütundakı rəqəm):", my_tickets.index)
@@ -281,8 +288,21 @@ else:
             solved_count = len(tickets_df[(tickets_df['Məsul_Şəxs'] == st.session_state.username) & (tickets_df['Status'] == 'Həll edildi')])
             st.info(f"📊 **{t['stats']}**\n\n{t['solved_by_me']}: **{solved_count}**")
 
-    # --- SUPER ADMIN PANELİ ---
+    # --- SUPER ADMIN PANELİ (YENİ SEKƏMLƏR BURADA) ---
     elif st.session_state.role == "super_admin":
         st.title("👑 Super Admin Paneli")
         st.metric("Ümumi Baza Sorğuları", len(tickets_df))
-        st.dataframe(tickets_df, use_container_width=True)
+        
+        # Bütün kateqoriyalar üçün sekmələr (Tabs) yaradılır
+        all_categories = ["Bütün Sorğular", "Şəbəkə", "Avadanlıq", "Hesab_Problemi", "Proqram_Təminatı", "Təhlükəsizlik", "Məlumat_Bazası"]
+        cat_tabs = st.tabs([f"📁 {c}" for c in all_categories])
+        
+        # Hər sekməyə uyğun datanı filtrləyib göstəririk
+        for i, cat in enumerate(all_categories):
+            with cat_tabs[i]:
+                if cat == "Bütün Sorğular":
+                    st.dataframe(tickets_df, use_container_width=True)
+                else:
+                    filtered_df = tickets_df[tickets_df["Kateqoriya"] == cat]
+                    st.write(f"**{cat}** üzrə cəmi sorğu: **{len(filtered_df)}**")
+                    st.dataframe(filtered_df, use_container_width=True)
