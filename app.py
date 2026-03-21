@@ -20,7 +20,7 @@ except ImportError:
 GEMINI_API_KEY = "AIzaSyDGEjFJuYSAC8hgZineWuIcGMZoakOuntY" # <--- Öz açarınızı bura yazın
 
 if GEMINI_API_KEY != "AIzaSyDGEjFJuYSAC8hgZineWuIcGMZoakOuntY":
-    genai.configure(api_key=GEMINI_API_KEY)
+    genai.configure(api_key=AIzaSyDGEjFJuYSAC8hgZineWuIcGMZoakOuntY)
     # Pro əvəzinə Flash modelindən istifadə edirik (Helpdesk kimi anlıq cavablar üçün daha sürətlidir)
     gemini_model = genai.GenerativeModel('gemini-1.5-flash') 
 else:
