@@ -4,3 +4,4 @@ scikit-learn
 joblib
 deep-translator
 streamlit-autorefresh
+plotly
