@@ -1,31 +1,27 @@
-# Müəllif: Kamran Muradov
-# Fayl: app.py
 import streamlit as st
 import pandas as pd
 import joblib
+import os  # YENİ ƏLAVƏ
 
 st.set_page_config(page_title="ASOIU IT Helpdesk AI", page_icon="⚙️", layout="centered")
 
-st.markdown("""
-<style>
-    .stApp { background-color: #ffffff; }
-    h1, h2, h3, p, label, .stMarkdown { color: #003366 !important; }
-    .stButton>button { background-color: #00509e; color: #ffffff; border-radius: 8px; border: none; padding: 10px 24px; font-weight: bold; }
-    .stButton>button:hover { background-color: #002244; color: white; }
-    .stTextArea textarea { border: 2px solid #00509e; background-color: #f4f8fc; color: #003366; }
-    div[data-testid="stAlert"] { background-color: #e6f2ff; border-left: 5px solid #00509e; color: #003366; }
-</style>
-""", unsafe_allow_html=True)
+# ... (CSS dizayn hissəsi olduğu kimi qalır) ...
+
+# Modelin tam yolunu tapmaq üçün dinamik yanaşma
+current_dir = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(current_dir, 'helpdesk_classifier_model.pkl')
 
 @st.cache_resource
 def load_model():
-    return joblib.load('helpdesk_classifier_model.pkl')
+    return joblib.load(model_path)
 
 try:
     model = load_model()
-except Exception:
-    st.error("Xəta: Model faylı tapılmadı!")
+except Exception as e:
+    st.error(f"Xəta: Model faylı tapılmadı! Axtarılan yol: {model_path}")
     st.stop()
+
+# ... (Kodun qalan hissəsi olduğu kimi qalır) ...
 
 # --- YENİ ƏLAVƏ: Əməkdaş Məlumat Bazası ---
 # Hər kateqoriya üçün uyğun mütəxəssis təyin edirik
