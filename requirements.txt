@@ -5,3 +5,4 @@ joblib
 deep-translator
 streamlit-autorefresh
 plotly
+google-generativeai
