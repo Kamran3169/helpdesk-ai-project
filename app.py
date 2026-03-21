@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - Öz-özünü quran, tam müstəqil sistem (Cloud üçün uyğunlaşdırılıb)
+# Məqsəd: ASOIU IT Helpdesk AI - Parol Yeniləmə, Auto-Refresh və Təmiz Dizayn
 
 import streamlit as st
 import pandas as pd
@@ -11,6 +11,12 @@ from datetime import datetime
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import RandomForestClassifier
+
+# Auto-refresh kitabxanasının yüklənməsi
+try:
+    from streamlit_autorefresh import st_autorefresh
+except ImportError:
+    st_autorefresh = None
 
 # ==========================================
 # 1. DİZAYN VƏ SƏHİFƏ TƏNZİMLƏMƏLƏRİ
@@ -25,26 +31,28 @@ st.markdown("""
         background-size: cover;
     }
     h1, h2, h3, p, label, .stMarkdown { color: #800000 !important; }
+    
     .stButton>button { background-color: #cc0000; color: #ffffff; border-radius: 25px; border: none; padding: 10px 24px; font-weight: bold; box-shadow: 0px 4px 6px rgba(204, 0, 0, 0.2); transition: 0.3s; width: 100%;}
     .stButton>button:hover { background-color: #990000; color: white; }
-    .stTextArea textarea, .stTextInput input { border: 2px solid #cc0000; border-radius: 15px; background-color: #fff9f9; color: #800000; }
+    
+    /* resize: none; əlavə edildi ki, text area kənarındakı çıxıntılar ləğv olunsun */
+    .stTextArea textarea { resize: none !important; border: 2px solid #cc0000; border-radius: 15px; background-color: #fff9f9; color: #800000; }
+    .stTextInput input { border: 2px solid #cc0000; border-radius: 15px; background-color: #fff9f9; color: #800000; }
     div[data-testid="stAlert"] { background-color: #ffe6e6; border-left: 5px solid #cc0000; border-radius: 12px; color: #800000; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. SİSTEMİN ÖZÜNÜ AVTOMATİK YARATMASI (AUTO-SETUP)
+# 2. SİSTEMİN ÖZÜNÜ YARATMASI (AUTO-SETUP)
 # ==========================================
 @st.cache_resource
 def initialize_system():
     os.makedirs('data', exist_ok=True)
-    
-    # Əgər məlumat bazası yoxdursa yaradırıq
     if not os.path.exists('data/tickets.csv'):
-        network_issues = ["Korpustakı Wi-Fi şəbəkəsinə qoşulmur", "İnternet bağlantısı zəifdir", "IP xətası verir", "Lan kabeli qırılıb"]
-        hardware_issues = ["Noutbuk qəfildən donur", "Proyektor işləmir", "Printer çap etmir", "RAM problemi var", "SSD xarab olub"]
-        account_issues = ["Mailimə giriş edə bilmirəm", "Moodle parolunu unutmuşam", "Hesabım bloklanıb"]
-        software_issues = ["Office proqramları lisenziya xətası verir", "Antivirus xəta verir", "Windows update dondu"]
+        network_issues = ["Wi-Fi qoşulmur", "İnternet zəifdir", "IP xətası", "Lan kabel qırılıb"]
+        hardware_issues = ["Noutbuk donur", "Proyektor işləmir", "Printer çap etmir", "RAM problemi"]
+        account_issues = ["Mailimə girə bilmirəm", "Parolu unutmuşam", "Hesab bloklanıb"]
+        software_issues = ["Office lisenziya xətası", "Antivirus xətası", "Windows dondu"]
         
         data = []
         for _ in range(50):
@@ -52,40 +60,30 @@ def initialize_system():
             data.append({"ticket_text": random.choice(hardware_issues), "category": "Avadanlıq"})
             data.append({"ticket_text": random.choice(account_issues), "category": "Hesab_Problemi"})
             data.append({"ticket_text": random.choice(software_issues), "category": "Proqram_Təminatı"})
-        
         pd.DataFrame(data).to_csv('data/tickets.csv', index=False)
 
-    # Modeli canlı öyrədən alt funksiya
     def train_new_model():
         df = pd.read_csv('data/tickets.csv')
-        pipeline = Pipeline([
-            ('tfidf', TfidfVectorizer()),
-            ('clf', RandomForestClassifier(n_estimators=100, random_state=42))
-        ])
+        pipeline = Pipeline([('tfidf', TfidfVectorizer()), ('clf', RandomForestClassifier(n_estimators=100, random_state=42))])
         pipeline.fit(df['ticket_text'], df['category'])
         return pipeline
 
-    # Xəta tutucu məntiq (Pickle Error Həlli)
     if not os.path.exists('helpdesk_classifier_model.pkl'):
         model = train_new_model()
         joblib.dump(model, 'helpdesk_classifier_model.pkl')
         return model
     else:
-        try:
-            # Faylı oxumağa cəhd edir
-            return joblib.load('helpdesk_classifier_model.pkl')
+        try: return joblib.load('helpdesk_classifier_model.pkl')
         except Exception:
-            # Versiya xətası verərsə, çökmək əvəzinə serverdə təzədən öyrədir
             model = train_new_model()
             joblib.dump(model, 'helpdesk_classifier_model.pkl')
             return model
 
-# Modeli yükləyirik
-with st.spinner("Sistem konfiqurasiya edilir, zəhmət olmasa gözləyin..."):
+with st.spinner("Sistem konfiqurasiya edilir..."):
     model = initialize_system()
 
 # ==========================================
-# 3. İSTİFADƏÇİ VƏ SORĞU BAZALARININ YARADILMASI
+# 3. İSTİFADƏÇİ VƏ SORĞU BAZALARI
 # ==========================================
 USERS_FILE = "data/users_db.csv"
 TICKETS_FILE = "data/live_tickets.csv"
@@ -103,60 +101,86 @@ if not os.path.exists(TICKETS_FILE):
     pd.DataFrame(columns=["Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Məsul_Şəxs"]).to_csv(TICKETS_FILE, index=False)
 
 # ==========================================
-# 4. GİRİŞ (LOGIN/SIGN UP) MƏNTİQİ
+# 4. GİRİŞ VƏ PAROL YENİLƏMƏ
 # ==========================================
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
+if 'show_forgot_pass' not in st.session_state:
+    st.session_state.show_forgot_pass = False
 
 if not st.session_state.logged_in:
     st.markdown("<h1 style='text-align: center;'>ASOIU IT Helpdesk Sisteminə Xoş Gəldiniz</h1>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        tab_login, tab_signup = st.tabs(["🔐 Daxil Ol", "📝 Qeydiyyat"])
-        
-        with tab_login:
-            st.subheader("Sistemə Giriş")
-            login_user = st.text_input("İstifadəçi adı:", key="login_user")
-            login_pass = st.text_input("Şifrə:", type="password", key="login_pass")
+        if not st.session_state.show_forgot_pass:
+            tab_login, tab_signup = st.tabs(["🔐 Daxil Ol", "📝 Qeydiyyat"])
             
-            if st.button("Daxil Ol"):
-                users_df = pd.read_csv(USERS_FILE)
-                user_match = users_df[(users_df['username'] == login_user) & (users_df['password'] == login_pass)]
+            with tab_login:
+                st.subheader("Sistemə Giriş")
+                login_user = st.text_input("İstifadəçi adı:")
+                login_pass = st.text_input("Şifrə:", type="password")
                 
-                if not user_match.empty:
-                    user_data = user_match.iloc[0]
-                    st.session_state.logged_in = True
-                    st.session_state.username = user_data['username']
-                    st.session_state.role = user_data['role']
-                    st.session_state.name = user_data['name']
-                    st.session_state.dept = user_data['dept']
-                    st.rerun()
-                else:
-                    st.error("❌ İstifadəçi adı və ya şifrə yanlışdır.")
-        
-        with tab_signup:
-            st.subheader("Yeni Hesab Yarat")
-            new_name = st.text_input("Tam Adınız:")
-            new_username = st.text_input("Yeni İstifadəçi adı:")
-            new_password = st.text_input("Yeni Şifrə:", type="password")
-            
-            if st.button("Qeydiyyatdan Keç"):
-                if new_name and new_username and new_password:
+                if st.button("Daxil Ol"):
                     users_df = pd.read_csv(USERS_FILE)
-                    if new_username in users_df['username'].values:
-                        st.error("⚠️ Bu istifadəçi adı artıq mövcuddur.")
+                    user_match = users_df[(users_df['username'] == login_user) & (users_df['password'] == login_pass)]
+                    if not user_match.empty:
+                        user_data = user_match.iloc[0]
+                        st.session_state.logged_in = True
+                        st.session_state.username = user_data['username']
+                        st.session_state.role = user_data['role']
+                        st.session_state.name = user_data['name']
+                        st.session_state.dept = user_data['dept']
+                        st.rerun()
                     else:
-                        new_row = pd.DataFrame([{"username": new_username, "password": new_password, "role": "user", "name": new_name, "dept": "Yoxdur"}])
-                        new_row.to_csv(USERS_FILE, mode='a', header=False, index=False)
-                        st.success("✅ Qeydiyyat uğurla tamamlandı! 'Daxil Ol' bölməsindən giriş edə bilərsiniz.")
+                        st.error("❌ İstifadəçi adı və ya şifrə yanlışdır.")
+                        
+                # PAROLUMU UNUTDUM DÜYMƏSİ
+                if st.button("❓ Parolumu Unutdum"):
+                    st.session_state.show_forgot_pass = True
+                    st.rerun()
+            
+            with tab_signup:
+                st.subheader("Yeni Hesab Yarat")
+                new_name = st.text_input("Tam Adınız:")
+                new_username = st.text_input("Yeni İstifadəçi adı:")
+                new_password = st.text_input("Yeni Şifrə:", type="password")
+                if st.button("Qeydiyyatdan Keç"):
+                    if new_name and new_username and new_password:
+                        users_df = pd.read_csv(USERS_FILE)
+                        if new_username in users_df['username'].values:
+                            st.error("⚠️ Bu istifadəçi adı mövcuddur.")
+                        else:
+                            pd.DataFrame([{"username": new_username, "password": new_password, "role": "user", "name": new_name, "dept": "Yoxdur"}]).to_csv(USERS_FILE, mode='a', header=False, index=False)
+                            st.success("✅ Qeydiyyat uğurludur! 'Daxil Ol' bölməsindən giriş edin.")
+                    else:
+                        st.warning("Xanaları doldurun.")
+        else:
+            # PAROL SIFIRLAMA EKRANI
+            st.subheader("🔄 Şifrənin Yenilənməsi")
+            reset_user = st.text_input("İstifadəçi adınızı daxil edin:")
+            new_pass = st.text_input("Yeni Şifrənizi daxil edin:", type="password")
+            
+            if st.button("Şifrəni Dəyiş"):
+                users_df = pd.read_csv(USERS_FILE)
+                if reset_user in users_df['username'].values:
+                    users_df.loc[users_df['username'] == reset_user, 'password'] = new_pass
+                    users_df.to_csv(USERS_FILE, index=False)
+                    st.success("✅ Şifrəniz uğurla yeniləndi!")
                 else:
-                    st.warning("Xanaları doldurun.")
+                    st.error("Belə bir istifadəçi tapılmadı.")
+            if st.button("⬅️ Geri Qayıt"):
+                st.session_state.show_forgot_pass = False
+                st.rerun()
 
 # ==========================================
-# 5. ƏSAS SİSTEM (ROLLAR ÜZRƏ PANELLƏR)
+# 5. ƏSAS SİSTEM VƏ AUTO-REFRESH
 # ==========================================
 else:
+    # 5 Saniyəlik Auto-Refresh (Yalnız Adminlər üçün)
+    if st.session_state.role in ["admin", "super_admin"] and st_autorefresh is not None:
+        st_autorefresh(interval=5000, key="admin_refresh")
+
     colA, colB = st.columns([4, 1])
     with colA:
         st.subheader(f"👋 Xoş gəldiniz, {st.session_state.name} ({st.session_state.role.upper()})")
@@ -177,9 +201,7 @@ else:
                 agent_mapping = {"Şəbəkə": "Cavid Məmmədov", "Avadanlıq": "Orxan Əliyev", "Hesab_Problemi": "Aygün Həsənova", "Proqram_Təminatı": "Elvin Qasımov"}
                 assigned_agent = agent_mapping.get(prediction, "Ümumi Şöbə")
                 
-                new_ticket = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.name, "Şikayət": user_input, "Kateqoriya": prediction, "Məsul_Şəxs": assigned_agent}])
-                new_ticket.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                
+                pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Göndərən": st.session_state.name, "Şikayət": user_input, "Kateqoriya": prediction, "Məsul_Şəxs": assigned_agent}]).to_csv(TICKETS_FILE, mode='a', header=False, index=False)
                 st.success(f"✅ Sorğunuz qeydə alındı! Kateqoriya: **{prediction}**")
                 st.info(f"👤 Məsul mütəxəssis: **{assigned_agent}**.")
             else:
@@ -188,6 +210,7 @@ else:
     # --- ADMIN PANELİ ---
     elif st.session_state.role == "admin":
         st.title(f"🛠️ İş Paneli: {st.session_state.dept}")
+        st.markdown("*Bu panel yeni sorğuları yoxlamaq üçün hər 5 saniyədən bir avtomatik yenilənir.*")
         tickets_df = pd.read_csv(TICKETS_FILE)
         my_tickets = tickets_df[tickets_df["Kateqoriya"] == st.session_state.dept]
         
@@ -200,6 +223,7 @@ else:
     # --- SUPER ADMIN PANELİ ---
     elif st.session_state.role == "super_admin":
         st.title("👑 Super Admin Paneli")
+        st.markdown("*Bu panel canlı nəzarət üçün hər 5 saniyədən bir avtomatik yenilənir.*")
         tab_tickets, tab_users = st.tabs(["🗂️ Bütün Biletlər", "👥 İstifadəçilər"])
         
         with tab_tickets:
