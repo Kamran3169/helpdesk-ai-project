@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - Genişləndirilmiş Kateqoriyalar və Sekməli İdarəetmə
+# Məqsəd: ASOIU IT Helpdesk AI - 1.5s Auto-Refresh, Qırmızı Düymələr və Tam İdarəetmə
 
 import streamlit as st
 import pandas as pd
@@ -31,28 +31,38 @@ st.markdown("""
     }
     h1, h2, h3, p, label, .stMarkdown { color: #5c0000 !important; }
     
-    .stButton>button, .stFormSubmitButton>button { 
-        background-color: #8b0000; color: #ffffff; border-radius: 25px; border: none; padding: 10px 24px; font-weight: bold; box-shadow: 0px 4px 6px rgba(139, 0, 0, 0.3); transition: 0.3s; width: 100%;
+    /* BÜTÜN DÜYMƏLƏR ÜÇÜN QƏTİ QIRMIZI FON VƏ AĞ YAZI */
+    button[kind="primary"], button[kind="secondary"], .stButton>button, .stFormSubmitButton>button { 
+        background-color: #cc0000 !important; 
+        color: #ffffff !important; 
+        border-radius: 25px !important; 
+        border: none !important; 
+        padding: 10px 24px !important; 
+        font-weight: bold !important; 
+        box-shadow: 0px 4px 6px rgba(204, 0, 0, 0.3) !important; 
+        transition: 0.3s !important; 
+        width: 100% !important;
     }
-    .stButton>button:hover, .stFormSubmitButton>button:hover { background-color: #4a0000; color: white; }
+    button[kind="primary"]:hover, button[kind="secondary"]:hover, .stButton>button:hover, .stFormSubmitButton>button:hover { 
+        background-color: #8b0000 !important; 
+        color: white !important; 
+    }
     
     .stTextArea textarea { resize: none !important; border: 2px solid #b30000; border-radius: 15px; background-color: #fffafb; color: #5c0000; }
     .stTextInput input, .stSelectbox select { border: 2px solid #b30000; border-radius: 15px; background-color: #fffafb; color: #5c0000; }
-    div[data-testid="stAlert"] { background-color: #fff0f0; border-left: 5px solid #8b0000; border-radius: 12px; color: #5c0000; }
-    
-    /* Sekmələrin (Tabs) dizaynını gözəlləşdirmək üçün */
-    button[data-baseweb="tab"] { font-weight: bold; color: #8b0000 !important; }
+    div[data-testid="stAlert"] { background-color: #fff0f0; border-left: 5px solid #cc0000; border-radius: 12px; color: #5c0000; }
+    button[data-baseweb="tab"] { font-weight: bold; color: #cc0000 !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. DİL (TƏRCÜMƏ) SÖZLÜYÜ
+# 2. DİL SÖZLÜYÜ
 # ==========================================
 LANG = {
-    "AZE": {"welcome": "Sistemə Xoş Gəldiniz", "login_tab": "Daxil Ol", "signup_tab": "Qeydiyyat", "user": "İstifadəçi adı", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Parolumu Unutdum", "name": "Tam Adınız", "signup_btn": "Qeydiyyatdan Keç", "logout": "Çıxış Et", "new_ticket": "Yeni Sorğu", "desc": "Problemi daxil edin:", "send": "Göndər", "stats": "Sizin Statistika", "my_tickets": "Göndərdiyim sorğular", "exam": "Admin Ol (İmtahan)", "admin_panel": "İş Paneli", "solved_by_me": "Həll etdiyim sorğular", "open_tickets": "Açıq Sorğular", "mark_solved": "Həll edildi olaraq işarələ"},
-    "ENG": {"welcome": "Welcome to the System", "login_tab": "Log In", "signup_tab": "Sign Up", "user": "Username", "pass": "Password", "login_btn": "Log In", "forgot": "Forgot Password", "name": "Full Name", "signup_btn": "Sign Up", "logout": "Log Out", "new_ticket": "New Ticket", "desc": "Describe the problem:", "send": "Submit", "stats": "Your Stats", "my_tickets": "Tickets submitted", "exam": "Become Admin (Exam)", "admin_panel": "Work Panel", "solved_by_me": "Tickets resolved by me", "open_tickets": "Open Tickets", "mark_solved": "Mark as Resolved"},
-    "RUS": {"welcome": "Добро пожаловать в систему", "login_tab": "Войти", "signup_tab": "Регистрация", "user": "Имя пользователя", "pass": "Пароль", "login_btn": "Войти", "forgot": "Забыл пароль", "name": "Полное имя", "signup_btn": "Зарегистрироваться", "logout": "Выйти", "new_ticket": "Новый запрос", "desc": "Опишите проблему:", "send": "Отправить", "stats": "Ваша статистика", "my_tickets": "Отправленные запросы", "exam": "Стать админом (Экзамен)", "admin_panel": "Рабочая панель", "solved_by_me": "Решенные мной запросы", "open_tickets": "Открытые запросы", "mark_solved": "Отметить как решенное"},
-    "TR": {"welcome": "Sisteme Hoş Geldiniz", "login_tab": "Giriş Yap", "signup_tab": "Kayıt Ol", "user": "Kullanıcı Adı", "pass": "Şifre", "login_btn": "Giriş Yap", "forgot": "Şifremi Unuttum", "name": "Tam Adınız", "signup_btn": "Kayıt Ol", "logout": "Çıkış Yap", "new_ticket": "Yeni Talep", "desc": "Sorunu açıklayın:", "send": "Gönder", "stats": "İstatistikleriniz", "my_tickets": "Gönderdiğim talepler", "exam": "Admin Ol (Sınav)", "admin_panel": "Çalışma Paneli", "solved_by_me": "Çözdüğüm talepler", "open_tickets": "Açık Talepler", "mark_solved": "Çözüldü olarak işaretle"}
+    "AZE": {"welcome": "Sistemə Xoş Gəldiniz", "login_tab": "Daxil Ol", "signup_tab": "Qeydiyyat", "user": "İstifadəçi adı", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Parolumu Unutdum", "name": "Tam Adınız", "signup_btn": "Qeydiyyatdan Keç", "logout": "Çıxış Et", "new_ticket": "Yeni Sorğu", "desc": "Problemi daxil edin:", "send": "Göndər", "stats": "Sizin Statistika", "my_tickets": "Göndərdiyim sorğular", "exam": "Admin Ol (İmtahan)", "admin_panel": "İş Paneli", "solved_by_me": "Həll etdiyim sorğular", "open_tickets": "Açıq Sorğular", "mark_solved": "Həll edildi kimi təsdiqlə"},
+    "ENG": {"welcome": "Welcome to the System", "login_tab": "Log In", "signup_tab": "Sign Up", "user": "Username", "pass": "Password", "login_btn": "Log In", "forgot": "Forgot Password", "name": "Full Name", "signup_btn": "Sign Up", "logout": "Log Out", "new_ticket": "New Ticket", "desc": "Describe the problem:", "send": "Submit", "stats": "Your Stats", "my_tickets": "Tickets submitted", "exam": "Become Admin (Exam)", "admin_panel": "Work Panel", "solved_by_me": "Tickets resolved by me", "open_tickets": "Open Tickets", "mark_solved": "Confirm as Resolved"},
+    "RUS": {"welcome": "Добро пожаловать", "login_tab": "Войти", "signup_tab": "Регистрация", "user": "Имя пользователя", "pass": "Пароль", "login_btn": "Войти", "forgot": "Забыл пароль", "name": "Полное имя", "signup_btn": "Зарегистрироваться", "logout": "Выйти", "new_ticket": "Новый запрос", "desc": "Опишите проблему:", "send": "Отправить", "stats": "Ваша статистика", "my_tickets": "Отправленные запросы", "exam": "Стать админом (Экзамен)", "admin_panel": "Рабочая панель", "solved_by_me": "Решенные мной запросы", "open_tickets": "Открытые запросы", "mark_solved": "Подтвердить решение"},
+    "TR": {"welcome": "Sisteme Hoş Geldiniz", "login_tab": "Giriş Yap", "signup_tab": "Kayıt Ol", "user": "Kullanıcı Adı", "pass": "Şifre", "login_btn": "Giriş Yap", "forgot": "Şifremi Unuttum", "name": "Tam Adınız", "signup_btn": "Kayıt Ol", "logout": "Çıkış Yap", "new_ticket": "Yeni Talep", "desc": "Sorunu açıklayın:", "send": "Gönder", "stats": "İstatistikleriniz", "my_tickets": "Gönderdiğim talepler", "exam": "Admin Ol (Sınav)", "admin_panel": "Çalışma Paneli", "solved_by_me": "Çözdüğüm talepler", "open_tickets": "Açık Talepler", "mark_solved": "Çözüldü olarak onayla"}
 }
 
 st.sidebar.title("🌍 Dil / Language")
@@ -60,28 +70,24 @@ sel_lang = st.sidebar.radio("", ["AZE", "ENG", "RUS", "TR"], horizontal=True, la
 t = LANG[sel_lang]
 
 # ==========================================
-# 3. SİSTEMİN ÖZÜNÜ YARATMASI (AUTO-SETUP)
+# 3. AUTO-SETUP & DB
 # ==========================================
 @st.cache_resource
 def initialize_system():
     os.makedirs('data', exist_ok=True)
-    
-    # 6 Kateqoriyanın olub-olmadığını yoxlayır. Yoxdursa, köhnə bazanı silib yenidən yaradır.
     rebuild_needed = False
     if os.path.exists('data/tickets.csv'):
         df_check = pd.read_csv('data/tickets.csv')
-        if len(df_check['category'].unique()) < 6:
-            rebuild_needed = True
-    else:
-        rebuild_needed = True
+        if len(df_check['category'].unique()) < 6: rebuild_needed = True
+    else: rebuild_needed = True
 
     if rebuild_needed:
         network_issues = ["Wi-Fi qoşulmur", "İnternet zəifdir", "IP xətası", "Lan kabel qırılıb"]
         hardware_issues = ["Noutbuk donur", "Proyektor işləmir", "Printer çap etmir", "RAM problemi"]
         account_issues = ["Mailimə girə bilmirəm", "Parolu unutmuşam", "Hesab bloklanıb"]
         software_issues = ["Office lisenziya xətası", "Antivirus xətası", "Windows dondu"]
-        security_issues = ["Kompüterə virus düşüb", "Spam maillər gəlir", "Fayllarım şifrələnib", "Qəribə pop-uplar açılır"]
-        database_issues = ["Məlumat bazasına qoşulmur", "SQL xətası verir", "Sistemdən məlumat silinib", "1C proqramı açılmır"]
+        security_issues = ["Kompüterə virus düşüb", "Spam maillər", "Fayllarım şifrələnib"]
+        database_issues = ["Məlumat bazasına qoşulmur", "SQL xətası", "1C açılmır"]
         
         data = []
         for _ in range(50):
@@ -92,9 +98,7 @@ def initialize_system():
             data.append({"ticket_text": random.choice(security_issues), "category": "Təhlükəsizlik"})
             data.append({"ticket_text": random.choice(database_issues), "category": "Məlumat_Bazası"})
         pd.DataFrame(data).to_csv('data/tickets.csv', index=False)
-        
-        if os.path.exists('helpdesk_classifier_model.pkl'):
-            os.remove('helpdesk_classifier_model.pkl')
+        if os.path.exists('helpdesk_classifier_model.pkl'): os.remove('helpdesk_classifier_model.pkl')
 
     def train_new_model():
         df = pd.read_csv('data/tickets.csv')
@@ -126,10 +130,9 @@ def ensure_db_exists():
             {"username": "orxan", "password": "123", "role": "admin", "name": "Orxan Əliyev", "dept": "Avadanlıq"},
             {"username": "cavid", "password": "123", "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"}
         ]).to_csv(USERS_FILE, index=False)
-
     try:
         df = pd.read_csv(TICKETS_FILE)
-        if "Status" not in df.columns: raise ValueError("Köhnə format tapıldı.")
+        if "Status" not in df.columns: raise ValueError("Format error")
     except Exception:
         pd.DataFrame(columns=["Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Məsul_Şəxs", "Status"]).to_csv(TICKETS_FILE, index=False)
 
@@ -147,12 +150,11 @@ if not st.session_state.logged_in:
     with col2:
         if not st.session_state.show_forgot_pass:
             tab_login, tab_signup = st.tabs([f"🔐 {t['login_tab']}", f"📝 {t['signup_tab']}"])
-            
             with tab_login:
                 with st.form("login_form"):
                     login_user = st.text_input(t['user'])
                     login_pass = st.text_input(t['pass'], type="password")
-                    submit_login = st.form_submit_button(t['login_btn'])
+                    submit_login = st.form_submit_button(t['login_btn'], type="primary")
                     if submit_login:
                         users_df = pd.read_csv(USERS_FILE)
                         user_match = users_df[(users_df['username'] == login_user) & (users_df['password'] == login_pass)]
@@ -161,7 +163,7 @@ if not st.session_state.logged_in:
                             st.session_state.update({"logged_in": True, "username": u['username'], "role": u['role'], "name": u['name'], "dept": u['dept']})
                             st.rerun()
                         else: st.error("❌ Xəta / Error")
-                if st.button(f"❓ {t['forgot']}"):
+                if st.button(f"❓ {t['forgot']}", type="primary"):
                     st.session_state.show_forgot_pass = True
                     st.rerun()
                     
@@ -170,7 +172,7 @@ if not st.session_state.logged_in:
                     new_name = st.text_input(t['name'])
                     new_user = st.text_input(f"{t['user']} (Yeni):")
                     new_pass = st.text_input(f"{t['pass']} (Yeni):", type="password")
-                    submit_signup = st.form_submit_button(t['signup_btn'])
+                    submit_signup = st.form_submit_button(t['signup_btn'], type="primary")
                     if submit_signup:
                         pd.DataFrame([{"username": new_user, "password": new_pass, "role": "user", "name": new_name, "dept": "Yoxdur"}]).to_csv(USERS_FILE, mode='a', header=False, index=False)
                         st.success("✅ OK")
@@ -180,8 +182,8 @@ if not st.session_state.logged_in:
                 reset_user = st.text_input(t['user'])
                 new_pass = st.text_input(t['pass'], type="password")
                 col_btn1, col_btn2 = st.columns(2)
-                with col_btn1: submit_reset = st.form_submit_button("OK")
-                with col_btn2: back_btn = st.form_submit_button("⬅️ Back")
+                with col_btn1: submit_reset = st.form_submit_button("OK", type="primary")
+                with col_btn2: back_btn = st.form_submit_button("⬅️ Back", type="primary")
                 if submit_reset:
                     df = pd.read_csv(USERS_FILE)
                     df.loc[df['username'] == reset_user, 'password'] = new_pass
@@ -195,13 +197,14 @@ if not st.session_state.logged_in:
 # 5. ƏSAS SİSTEM
 # ==========================================
 else:
+    # --- YENİLƏNMƏ MÜDDƏTİ 1.5 SANİYƏYƏ (1500ms) ENDİRİLDİ ---
     if st.session_state.role in ["admin", "super_admin"] and st_autorefresh:
-        st_autorefresh(interval=5000, key="admin_refresh")
+        st_autorefresh(interval=1500, key="admin_refresh")
 
     colA, colB = st.columns([4, 1])
     with colA: st.subheader(f"👋 {st.session_state.name} ({st.session_state.role.upper()})")
     with colB:
-        if st.button(f"🚪 {t['logout']}"):
+        if st.button(f"🚪 {t['logout']}", type="primary"):
             st.session_state.logged_in = False
             st.rerun()
     st.markdown("---")
@@ -216,14 +219,10 @@ else:
             with col_main:
                 with st.form("ticket_form", clear_on_submit=True):
                     user_input = st.text_area(t['desc'], height=120)
-                    submit_ticket = st.form_submit_button(t['send'])
+                    submit_ticket = st.form_submit_button(t['send'], type="primary")
                     if submit_ticket and user_input.strip():
                         pred = model.predict([user_input])[0]
-                        # Yeni kateqoriyalar üçün işçi təyinatı (Şərti)
-                        agent_mapping = {"Şəbəkə": "Cavid Məmmədov", "Avadanlıq": "Orxan Əliyev", "Hesab_Problemi": "Aygün Həsənova", "Proqram_Təminatı": "Elvin Qasımov", "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi", "Məlumat_Bazası": "Baza Administratoru"}
-                        assigned_agent = agent_mapping.get(pred, "Ümumi Şöbə")
-                        
-                        new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred, "Məsul_Şəxs": assigned_agent, "Status": "Açıq"}])
+                        new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred, "Məsul_Şəxs": "Təyin Edilməyib", "Status": "Açıq"}])
                         new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
                         st.success(f"✅ Kateqoriya / Category: {pred}")
             with col_stat:
@@ -233,39 +232,27 @@ else:
         with tab_exam:
             st.write("### Helpdesk Mütəxəssisi İmtahanı / Helpdesk Agent Exam")
             with st.form("exam_form"):
-                q1 = st.radio("1. IP münaqişəsi (IP conflict) nədir?", ["Bilinmir", "İki cihazın eyni IP-yə malik olması", "Kabelin qırılması"])
+                q1 = st.radio("1. IP münaqişəsi nədir?", ["Bilinmir", "İki cihazın eyni IP-yə malik olması", "Kabel qırılması"])
                 q2 = st.radio("2. RAM nə işə yarayır?", ["Şəkil çəkir", "Müvəqqəti yaddaş təmin edir", "İnternet verir"])
-                q3 = st.radio("3. Mavi ekran (BSOD) adətən nəyin xətasıdır?", ["Sistem/Hardware donması", "Səhv parol", "Toz"])
+                q3 = st.radio("3. Mavi ekran (BSOD) nəyin xətasıdır?", ["Sistem/Hardware donması", "Səhv parol", "Toz"])
                 q4 = st.radio("4. 'Ping' komandası nə üçündür?", ["Musiqi açmaq", "Şəbəkə əlaqəsini yoxlamaq", "Virus silmək"])
                 q5 = st.radio("5. VPN nədir?", ["Virtual Private Network", "Video Player Network", "Virus Protection"])
-                q6 = st.radio("6. SSD ilə HDD fərqi əsasən nədir?", ["Rəngi", "Sürəti və texnologiyası", "Ölçüsü"])
-                q7 = st.radio("7. Phishing (Fişinq) nədir?", ["Balıq tutmaq", "Kiber fırıldaqçılıq növü", "Proqramlaşdırma dili"])
-                q8 = st.radio("8. DHCP nə iş görür?", ["IP ünvanlarını avtomatik paylayır", "Ekranı təmizləyir", "Məlumatları silir"])
+                q6 = st.radio("6. SSD ilə HDD fərqi nədir?", ["Rəngi", "Sürəti və texnologiyası", "Ölçüsü"])
+                q7 = st.radio("7. Phishing (Fişinq) nədir?", ["Balıq tutmaq", "Kiber fırıldaqçılıq növü", "Kod dili"])
+                q8 = st.radio("8. DHCP nə iş görür?", ["IP ünvanlarını avtomatik paylayır", "Ekranı təmizləyir", "Məlumat silir"])
                 q9 = st.radio("9. DNS nədir?", ["Domain Name System", "Data Network System", "Digital Node Server"])
                 q10 = st.radio("10. Active Directory harada istifadə olunur?", ["Oyunlarda", "İstifadəçi və kompüterlərin idarə edilməsində", "Dizaynda"])
 
-                submit_exam = st.form_submit_button("İmtahanı Bitir / Finish Exam")
+                submit_exam = st.form_submit_button("İmtahanı Bitir / Finish Exam", type="primary")
                 if submit_exam:
-                    score = 0
-                    if q1 == "İki cihazın eyni IP-yə malik olması": score += 1
-                    if q2 == "Müvəqqəti yaddaş təmin edir": score += 1
-                    if q3 == "Sistem/Hardware donması": score += 1
-                    if q4 == "Şəbəkə əlaqəsini yoxlamaq": score += 1
-                    if q5 == "Virtual Private Network": score += 1
-                    if q6 == "Sürəti və texnologiyası": score += 1
-                    if q7 == "Kiber fırıldaqçılıq növü": score += 1
-                    if q8 == "IP ünvanlarını avtomatik paylayır": score += 1
-                    if q9 == "Domain Name System": score += 1
-                    if q10 == "İstifadəçi və kompüterlərin idarə edilməsində": score += 1
-                    
-                    st.write(f"Sizin balınız / Your score: **{score}/10**")
+                    score = sum([q1=="İki cihazın eyni IP-yə malik olması", q2=="Müvəqqəti yaddaş təmin edir", q3=="Sistem/Hardware donması", q4=="Şəbəkə əlaqəsini yoxlamaq", q5=="Virtual Private Network", q6=="Sürəti və texnologiyası", q7=="Kiber fırıldaqçılıq növü", q8=="IP ünvanlarını avtomatik paylayır", q9=="Domain Name System", q10=="İstifadəçi və kompüterlərin idarə edilməsində"])
+                    st.write(f"Sizin balınız: **{score}/10**")
                     if score >= 8:
                         users_df = pd.read_csv(USERS_FILE)
-                        users_df.loc[users_df['username'] == st.session_state.username, 'role'] = 'admin'
-                        users_df.loc[users_df['username'] == st.session_state.username, 'dept'] = 'Ümumi_Dəstək'
+                        users_df.loc[users_df['username'] == st.session_state.username, ['role', 'dept']] = ['admin', 'Ümumi_Dəstək']
                         users_df.to_csv(USERS_FILE, index=False)
-                        st.success("🎉 TƏBRİKLƏR! Siz artıq Adminsiniz. Zəhmət olmasa sistemdən çıxıb yenidən daxil olun.")
-                    else: st.error("Təəssüf ki, kəsildiniz. Yenidən cəhd edin.")
+                        st.success("🎉 TƏBRİKLƏR! Siz artıq Adminsiniz. Çıxış edib yenidən daxil olun.")
+                    else: st.error("Kəsildiniz. Yenidən cəhd edin.")
 
     # --- ADMIN PANELİ ---
     elif st.session_state.role == "admin":
@@ -277,32 +264,31 @@ else:
             st.dataframe(my_tickets, use_container_width=True)
             if not my_tickets.empty:
                 with st.form("close_ticket_form"):
-                    close_id = st.selectbox("Həll edilən sorğunun indeksini seçin (Sol sütundakı rəqəm):", my_tickets.index)
-                    submit_close = st.form_submit_button(t['mark_solved'])
+                    close_id = st.selectbox("Təsdiqləmək üçün sorğunun indeksini seçin (Sol sütun):", my_tickets.index)
+                    submit_close = st.form_submit_button(t['mark_solved'], type="primary")
                     if submit_close:
                         tickets_df.loc[close_id, "Status"] = "Həll edildi"
                         tickets_df.loc[close_id, "Məsul_Şəxs"] = st.session_state.username
                         tickets_df.to_csv(TICKETS_FILE, index=False)
-                        st.success("✅ Sorğu bağlandı!")
+                        st.success("✅ Sorğu 'Həll Edildi' olaraq təsdiqləndi!")
+                        st.rerun() # Düyməyə basan kimi dərhal 0 saniyəyə yenilənib siyahıdan silir
         with col_stat:
             solved_count = len(tickets_df[(tickets_df['Məsul_Şəxs'] == st.session_state.username) & (tickets_df['Status'] == 'Həll edildi')])
             st.info(f"📊 **{t['stats']}**\n\n{t['solved_by_me']}: **{solved_count}**")
 
-    # --- SUPER ADMIN PANELİ (YENİ SEKƏMLƏR BURADA) ---
+    # --- SUPER ADMIN PANELİ ---
     elif st.session_state.role == "super_admin":
         st.title("👑 Super Admin Paneli")
         st.metric("Ümumi Baza Sorğuları", len(tickets_df))
         
-        # Bütün kateqoriyalar üçün sekmələr (Tabs) yaradılır
         all_categories = ["Bütün Sorğular", "Şəbəkə", "Avadanlıq", "Hesab_Problemi", "Proqram_Təminatı", "Təhlükəsizlik", "Məlumat_Bazası"]
         cat_tabs = st.tabs([f"📁 {c}" for c in all_categories])
         
-        # Hər sekməyə uyğun datanı filtrləyib göstəririk
         for i, cat in enumerate(all_categories):
             with cat_tabs[i]:
-                if cat == "Bütün Sorğular":
-                    st.dataframe(tickets_df, use_container_width=True)
+                if cat == "Bütün Sorğular": st.dataframe(tickets_df, use_container_width=True)
                 else:
                     filtered_df = tickets_df[tickets_df["Kateqoriya"] == cat]
                     st.write(f"**{cat}** üzrə cəmi sorğu: **{len(filtered_df)}**")
                     st.dataframe(filtered_df, use_container_width=True)
+                    
