@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - Qəbul Et (Accept) Məntiqi, Qrafiklər və Bildirişlər
+# Məqsəd: ASOIU IT Helpdesk AI - L1 Ağıllı Avto-Həll və Dəqiq Çeşidləmə Sistemi
 
 import streamlit as st
 import pandas as pd
@@ -47,15 +47,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def play_notification_sound():
-    audio_html = """
-        <audio autoplay="true">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
-        </audio>
-    """
-    st.markdown(audio_html, unsafe_allow_html=True)
+    st.markdown("""<audio autoplay="true"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"></audio>""", unsafe_allow_html=True)
 
 # ==========================================
-# 2. DİL SÖZLÜYÜ (Təzə Düymələr Əlavə Edildi)
+# 2. DİL SÖZLÜYÜ
 # ==========================================
 LANG = {
     "AZE": {"welcome": "Sistemə Xoş Gəldiniz", "login_tab": "Daxil Ol", "signup_tab": "Qeydiyyat", "user": "İstifadəçi adı", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Parolumu Unutdum", "name": "Tam Adınız", "signup_btn": "Qeydiyyatdan Keç", "logout": "Çıxış Et", "new_ticket": "Yeni Sorğu", "desc": "Problemi daxil edin:", "send": "Göndər", "stats": "Statistika", "my_tickets": "Göndərdiyim sorğular", "exam": "Admin İmtahanı", "admin_panel": "İş Paneli", "solved_by_me": "Həll etdiklərim", "open_tickets": "Açıq (Gözləyən) Sorğular", "mark_solved": "Həll edildi kimi təsdiqlə", "download_csv": "☁️ CSV Yüklə", "accept_ticket": "İcraya Götür", "my_active": "İcradakı Sorğularım"},
@@ -69,38 +64,44 @@ sel_lang = st.sidebar.radio("", ["AZE", "ENG", "RUS", "TR"], horizontal=True, la
 t = LANG[sel_lang]
 
 # ==========================================
-# 3. AUTO-SETUP & DB
+# 3. AUTO-SETUP & AĞILLI DB 
 # ==========================================
 @st.cache_resource
 def initialize_system():
     os.makedirs('data', exist_ok=True)
     rebuild_needed = False
+    
     if os.path.exists('data/tickets.csv'):
-        if len(pd.read_csv('data/tickets.csv')['category'].unique()) < 6: rebuild_needed = True
+        df_check = pd.read_csv('data/tickets.csv')
+        if "Şəbəkə yoxdu" not in df_check['ticket_text'].values: rebuild_needed = True
     else: rebuild_needed = True
 
     if rebuild_needed:
-        network_issues = ["Wi-Fi qoşulmur", "İnternet zəifdir", "IP xətası", "Lan kabel qırılıb"]
-        hardware_issues = ["Noutbuk donur", "Proyektor işləmir", "Printer çap etmir", "RAM problemi"]
-        account_issues = ["Mailimə girə bilmirəm", "Parolu unutmuşam", "Hesab bloklanıb"]
-        software_issues = ["Office lisenziya xətası", "Antivirus xətası", "Windows dondu"]
-        security_issues = ["Kompüterə virus düşüb", "Spam maillər", "Fayllarım şifrələnib"]
-        database_issues = ["Məlumat bazasına qoşulmur", "SQL xətası", "1C açılmır"]
+        network_issues = ["Wi-Fi qoşulmur", "İnternet zəifdir", "IP xətası", "Lan kabel qırılıb", "Şəbəkə yoxdu", "Şəbəkəyə qoşula bilmirəm", "İnternet kəsilib", "Bağlantı qopur"]
+        hardware_issues = ["Noutbuk donur", "Proyektor işləmir", "Printer çap etmir", "RAM problemi", "Sistem bloku yanır", "Ekran açılmır", "Klaviatura işləmir", "Maus xarabdır"]
+        account_issues = ["Mailimə girə bilmirəm", "Parolu unutmuşam", "Hesab bloklanıb", "Sistemə giriş edə bilmirəm", "Şifrə yalnışdır", "Moodle hesabı açılmır"]
+        software_issues = ["Office lisenziya xətası", "Antivirus xətası", "Windows dondu", "Proqram açılmır", "Word işləmir", "Sistem update olunmur"]
+        security_issues = ["Kompüterə virus düşüb", "Spam maillər", "Fayllarım şifrələnib", "Heker hücumu", "Qəribə reklamlar çıxır"]
+        database_issues = ["Məlumat bazasına qoşulmur", "SQL xətası", "1C açılmır", "Serverə qoşulmaq olmur", "Baza silinib"]
         
         data = []
-        for _ in range(50):
+        for _ in range(100):
             data.append({"ticket_text": random.choice(network_issues), "category": "Şəbəkə"})
             data.append({"ticket_text": random.choice(hardware_issues), "category": "Avadanlıq"})
             data.append({"ticket_text": random.choice(account_issues), "category": "Hesab_Problemi"})
             data.append({"ticket_text": random.choice(software_issues), "category": "Proqram_Təminatı"})
             data.append({"ticket_text": random.choice(security_issues), "category": "Təhlükəsizlik"})
             data.append({"ticket_text": random.choice(database_issues), "category": "Məlumat_Bazası"})
+            
         pd.DataFrame(data).to_csv('data/tickets.csv', index=False)
         if os.path.exists('helpdesk_classifier_model.pkl'): os.remove('helpdesk_classifier_model.pkl')
 
     def train_new_model():
         df = pd.read_csv('data/tickets.csv')
-        pipeline = Pipeline([('tfidf', TfidfVectorizer()), ('clf', RandomForestClassifier(n_estimators=100, random_state=42))])
+        pipeline = Pipeline([
+            ('tfidf', TfidfVectorizer(ngram_range=(1, 2))), 
+            ('clf', RandomForestClassifier(n_estimators=100, random_state=42))
+        ])
         pipeline.fit(df['ticket_text'], df['category'])
         return pipeline
 
@@ -135,6 +136,26 @@ def ensure_db_exists():
         pd.DataFrame(columns=["Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Məsul_Şəxs", "Status"]).to_csv(TICKETS_FILE, index=False)
 
 ensure_db_exists()
+
+# ==========================================
+# AI AVTO-HƏLL FUNKSİYASI (YENİ PEŞƏKAR MƏNTİQ)
+# ==========================================
+def smart_ai_autosolve(text):
+    text = text.lower()
+    # Şifrə və Hesab problemləri
+    if any(word in text for word in ["parol", "şifrə", "unutmuşam", "mail"]):
+        return "🤖 AI Həll Yolu: Təhlükəsizlik qaydalarına əsasən, şifrənizi sıfırlamaq üçün korporativ portalda 'Şifrəni Bərpa Et' bölməsinə daxil olun. Sistemə qeydiyyat nömrənizi yazaraq SMS ilə yeni parol ala bilərsiniz."
+    # Sadə İnternet / Wi-Fi problemləri
+    elif any(word in text for word in ["zəif", "yavaş", "qopur"]) and any(word in text for word in ["internet", "wi-fi", "şəbəkə"]):
+        return "🤖 AI Həll Yolu: Hazırda mərkəzi serverlərdə yüklənmə mövcuddur. Lütfən cihazınızın Wi-Fi bağlantısını kəsib 30 saniyə sonra yenidən qoşulun və ya cihazınızı 'Restart' edin."
+    # Sadə donma / proqram xətaları
+    elif any(word in text for word in ["donur", "kasıyor", "dondu"]):
+        return "🤖 AI Həll Yolu: Sistem donmalarının əsas səbəbi arxa planda çox proqramın açıq olmasıdır. 'Task Manager' (Ctrl+Shift+Esc) açaraq lazımsız proqramları bağlayın və cihazı yenidən başladın."
+    # Virus təhlükəsi üçün ilkin təlimat
+    elif any(word in text for word in ["virus", "spam", "reklam"]):
+        return "🤖 AI Həll Yolu: Lütfən cihazı dərhal internet şəbəkəsindən ayırın. Təhlükəsizlik şöbəsi cihazınıza baxış keçirənə qədər heç bir flashkart taxmayın və şübhəli linklərə daxil olmayın."
+    
+    return None # Əgər problem qəlizdirsə (kabel qırılıb, ekran yanıb və s.), AI heç nə demir, insana ötürür.
 
 # ==========================================
 # 4. GİRİŞ VƏ QEYDİYYAT
@@ -216,7 +237,7 @@ else:
             st.rerun()
     st.markdown("---")
 
-    # --- USER PANELİ ---
+    # --- USER PANELİ (AĞILLI ÇEŞİDLƏMƏ İLƏ) ---
     if st.session_state.role == "user":
         tab_new, tab_exam = st.tabs([f"✍️ {t['new_ticket']}", f"🎯 {t['exam']}"])
         with tab_new:
@@ -225,11 +246,38 @@ else:
                 with st.form("ticket_form", clear_on_submit=True):
                     user_input = st.text_area(t['desc'], height=120)
                     submit_ticket = st.form_submit_button(t['send'], type="primary")
+                    
                     if submit_ticket and user_input.strip():
-                        pred = model.predict([user_input])[0]
-                        new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred, "Məsul_Şəxs": "Təyin Edilməyib", "Status": "Açıq"}])
-                        new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                        st.success(f"✅ Kateqoriya: {pred}")
+                        # Süni İntellekt Kateqoriyanı Təxmin Edir
+                        pred_category = model.predict([user_input])[0]
+                        
+                        # Peşəkar Yönləndirmə Üçün Şöbə Təyinatı
+                        agent_mapping = {
+                            "Şəbəkə": "Şəbəkə Şöbəsi",
+                            "Avadanlıq": "Texniki Dəstək",
+                            "Hesab_Problemi": "Hesab Qeydiyyatı",
+                            "Proqram_Təminatı": "Proqram Təminatı",
+                            "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi",
+                            "Məlumat_Bazası": "Baza Administratoru"
+                        }
+                        assigned_dept = agent_mapping.get(pred_category, "Ümumi Şöbə")
+                        
+                        # AI problemi özü həll edə bilirmi? (Smart Auto-Solve)
+                        ai_reply = smart_ai_autosolve(user_input)
+                        
+                        if ai_reply:
+                            # Problem dərhal bağlanır!
+                            new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Süni İntellekt 🤖", "Status": "Həll edildi"}])
+                            new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
+                            st.success(f"⚡ Süni İntellekt probleminizi saniyələr içində təhlil etdi! (Kateqoriya: {pred_category})")
+                            st.info(ai_reply)
+                        else:
+                            # Problem qəlizdirsə İnsana gedir!
+                            new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq"}])
+                            new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
+                            st.success(f"✅ Sorğu uğurla qeydə alındı və dəqiq təsnif edildi.")
+                            st.warning(f"Bu texniki baxış tələb edir. Sorğu dərhal **{assigned_dept}** mütəxəssislərinə yönləndirildi.")
+
             with col_stat:
                 my_count = len(tickets_df[tickets_df['Göndərən'] == st.session_state.username])
                 st.info(f"📈 **{t['stats']}**\n\n{t['my_tickets']}: **{my_count}**")
@@ -259,12 +307,11 @@ else:
                         st.success("🎉 TƏBRİKLƏR! Siz artıq Adminsiniz. Çıxış edib yenidən daxil olun.")
                     else: st.error("Kəsildiniz. Yenidən cəhd edin.")
 
-    # --- ADMIN PANELİ (Qəbul Et Məntiqi İlə) ---
+    # --- ADMIN PANELİ ---
     elif st.session_state.role == "admin":
         st.title(f"⚡ {t['admin_panel']}: {st.session_state.dept}")
         col_main, col_stat = st.columns([3, 1])
         with col_main:
-            # 1. AÇIQ (GÖZLƏYƏN) SORĞULAR VƏ QƏBUL ETMƏK
             st.write(f"### 📬 {t['open_tickets']}")
             open_tickets = tickets_df[(tickets_df["Kateqoriya"] == st.session_state.dept) & (tickets_df["Status"] == "Açıq")]
             st.dataframe(open_tickets, use_container_width=True)
@@ -282,7 +329,6 @@ else:
             
             st.markdown("---")
             
-            # 2. İCRADAKI SORĞULAR VƏ HƏLL ETMƏK
             st.write(f"### ⏳ {t['my_active']}")
             active_tickets = tickets_df[(tickets_df["Məsul_Şəxs"] == st.session_state.username) & (tickets_df["Status"] == "İcrada")]
             st.dataframe(active_tickets, use_container_width=True)
