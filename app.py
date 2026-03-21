@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - Öz-özünü quran, tam müstəqil (Auto-Train) sistem
+# Məqsəd: ASOIU IT Helpdesk AI - Öz-özünü quran, tam müstəqil sistem (Cloud üçün uyğunlaşdırılıb)
 
 import streamlit as st
 import pandas as pd
@@ -35,12 +35,11 @@ st.markdown("""
 # ==========================================
 # 2. SİSTEMİN ÖZÜNÜ AVTOMATİK YARATMASI (AUTO-SETUP)
 # ==========================================
-# Bu funksiya fayllar yoxdursa onlari avtomatik kodun icinden yaradir
 @st.cache_resource
 def initialize_system():
     os.makedirs('data', exist_ok=True)
     
-    # Əgər məlumat bazası yoxdursa, dərhal yaradırıq
+    # Əgər məlumat bazası yoxdursa yaradırıq
     if not os.path.exists('data/tickets.csv'):
         network_issues = ["Korpustakı Wi-Fi şəbəkəsinə qoşulmur", "İnternet bağlantısı zəifdir", "IP xətası verir", "Lan kabeli qırılıb"]
         hardware_issues = ["Noutbuk qəfildən donur", "Proyektor işləmir", "Printer çap etmir", "RAM problemi var", "SSD xarab olub"]
@@ -56,19 +55,32 @@ def initialize_system():
         
         pd.DataFrame(data).to_csv('data/tickets.csv', index=False)
 
-    # Əgər model (.pkl) yoxdursa, dərhal öyrədirik (Train edirik)
-    if not os.path.exists('helpdesk_classifier_model.pkl'):
+    # Modeli canlı öyrədən alt funksiya
+    def train_new_model():
         df = pd.read_csv('data/tickets.csv')
         pipeline = Pipeline([
             ('tfidf', TfidfVectorizer()),
             ('clf', RandomForestClassifier(n_estimators=100, random_state=42))
         ])
         pipeline.fit(df['ticket_text'], df['category'])
-        joblib.dump(pipeline, 'helpdesk_classifier_model.pkl')
-        
-    return joblib.load('helpdesk_classifier_model.pkl')
+        return pipeline
 
-# Modeli yükləyirik (Heç bir xəta vermədən özü hər şeyi həll edəcək)
+    # Xəta tutucu məntiq (Pickle Error Həlli)
+    if not os.path.exists('helpdesk_classifier_model.pkl'):
+        model = train_new_model()
+        joblib.dump(model, 'helpdesk_classifier_model.pkl')
+        return model
+    else:
+        try:
+            # Faylı oxumağa cəhd edir
+            return joblib.load('helpdesk_classifier_model.pkl')
+        except Exception:
+            # Versiya xətası verərsə, çökmək əvəzinə serverdə təzədən öyrədir
+            model = train_new_model()
+            joblib.dump(model, 'helpdesk_classifier_model.pkl')
+            return model
+
+# Modeli yükləyirik
 with st.spinner("Sistem konfiqurasiya edilir, zəhmət olmasa gözləyin..."):
     model = initialize_system()
 
