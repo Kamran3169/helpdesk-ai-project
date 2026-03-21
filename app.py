@@ -1,15 +1,19 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - Qeydiyyat Sistemi (Login/Sign Up) və Rollar
+# Məqsəd: ASOIU IT Helpdesk AI - Öz-özünü quran, tam müstəqil (Auto-Train) sistem
 
 import streamlit as st
 import pandas as pd
 import joblib
 import os
+import random
 from datetime import datetime
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.ensemble import RandomForestClassifier
 
 # ==========================================
-# 1. DİZAYN TƏNZİMLƏMƏLƏRİ (Qırmızı Fon və Oval Künclər)
+# 1. DİZAYN VƏ SƏHİFƏ TƏNZİMLƏMƏLƏRİ
 # ==========================================
 st.set_page_config(page_title="ASOIU IT Helpdesk AI", page_icon="⚙️", layout="wide")
 st.markdown("""
@@ -29,58 +33,76 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. VERİLƏNLƏR BAZASININ İNİSİALİZASİYASI (İstifadəçilər və Sorğular)
+# 2. SİSTEMİN ÖZÜNÜ AVTOMATİK YARATMASI (AUTO-SETUP)
 # ==========================================
-os.makedirs('data', exist_ok=True)
+# Bu funksiya fayllar yoxdursa onlari avtomatik kodun icinden yaradir
+@st.cache_resource
+def initialize_system():
+    os.makedirs('data', exist_ok=True)
+    
+    # Əgər məlumat bazası yoxdursa, dərhal yaradırıq
+    if not os.path.exists('data/tickets.csv'):
+        network_issues = ["Korpustakı Wi-Fi şəbəkəsinə qoşulmur", "İnternet bağlantısı zəifdir", "IP xətası verir", "Lan kabeli qırılıb"]
+        hardware_issues = ["Noutbuk qəfildən donur", "Proyektor işləmir", "Printer çap etmir", "RAM problemi var", "SSD xarab olub"]
+        account_issues = ["Mailimə giriş edə bilmirəm", "Moodle parolunu unutmuşam", "Hesabım bloklanıb"]
+        software_issues = ["Office proqramları lisenziya xətası verir", "Antivirus xəta verir", "Windows update dondu"]
+        
+        data = []
+        for _ in range(50):
+            data.append({"ticket_text": random.choice(network_issues), "category": "Şəbəkə"})
+            data.append({"ticket_text": random.choice(hardware_issues), "category": "Avadanlıq"})
+            data.append({"ticket_text": random.choice(account_issues), "category": "Hesab_Problemi"})
+            data.append({"ticket_text": random.choice(software_issues), "category": "Proqram_Təminatı"})
+        
+        pd.DataFrame(data).to_csv('data/tickets.csv', index=False)
+
+    # Əgər model (.pkl) yoxdursa, dərhal öyrədirik (Train edirik)
+    if not os.path.exists('helpdesk_classifier_model.pkl'):
+        df = pd.read_csv('data/tickets.csv')
+        pipeline = Pipeline([
+            ('tfidf', TfidfVectorizer()),
+            ('clf', RandomForestClassifier(n_estimators=100, random_state=42))
+        ])
+        pipeline.fit(df['ticket_text'], df['category'])
+        joblib.dump(pipeline, 'helpdesk_classifier_model.pkl')
+        
+    return joblib.load('helpdesk_classifier_model.pkl')
+
+# Modeli yükləyirik (Heç bir xəta vermədən özü hər şeyi həll edəcək)
+with st.spinner("Sistem konfiqurasiya edilir, zəhmət olmasa gözləyin..."):
+    model = initialize_system()
+
+# ==========================================
+# 3. İSTİFADƏÇİ VƏ SORĞU BAZALARININ YARADILMASI
+# ==========================================
 USERS_FILE = "data/users_db.csv"
 TICKETS_FILE = "data/live_tickets.csv"
 
-# Əgər istifadəçi bazası yoxdursa, Super Admin və Adminlərlə birlikdə yaradırıq
 if not os.path.exists(USERS_FILE):
-    initial_users = pd.DataFrame([
+    pd.DataFrame([
         {"username": "kamran", "password": "admin", "role": "super_admin", "name": "Kamran Muradov", "dept": "Bütün_Sistem"},
         {"username": "orxan", "password": "123", "role": "admin", "name": "Orxan Əliyev", "dept": "Avadanlıq"},
         {"username": "cavid", "password": "123", "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"},
         {"username": "aygun", "password": "123", "role": "admin", "name": "Aygün Həsənova", "dept": "Hesab_Problemi"},
         {"username": "elvin", "password": "123", "role": "admin", "name": "Elvin Qasımov", "dept": "Proqram_Təminatı"}
-    ])
-    initial_users.to_csv(USERS_FILE, index=False)
+    ]).to_csv(USERS_FILE, index=False)
 
-# Əgər sorğu bazası yoxdursa yaradırıq
 if not os.path.exists(TICKETS_FILE):
     pd.DataFrame(columns=["Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Məsul_Şəxs"]).to_csv(TICKETS_FILE, index=False)
 
 # ==========================================
-# 3. SÜNİ İNTELLEKT MODELİNİN YÜKLƏNMƏSİ
-# ==========================================
-@st.cache_resource
-def load_model():
-    return joblib.load('helpdesk_classifier_model.pkl')
-
-try:
-    model = load_model()
-except Exception:
-    st.error("Xəta: 'helpdesk_classifier_model.pkl' tapılmadı. Modeli train edin.")
-    st.stop()
-
-# ==========================================
-# 4. SESSİYA (GİRİŞ) VƏZİYYƏTİNİN İDARƏSİ
+# 4. GİRİŞ (LOGIN/SIGN UP) MƏNTİQİ
 # ==========================================
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
-# ==========================================
-# 5. QEYDİYYAT VƏ GİRİŞ EKRANI (LOG OUT VƏZİYYƏTİ)
-# ==========================================
 if not st.session_state.logged_in:
     st.markdown("<h1 style='text-align: center;'>ASOIU IT Helpdesk Sisteminə Xoş Gəldiniz</h1>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Tablarla Log In və Sign Up ayırırıq
-        tab_login, tab_signup = st.tabs(["🔐 Daxil Ol (Log In)", "📝 Qeydiyyat (Sign Up)"])
+        tab_login, tab_signup = st.tabs(["🔐 Daxil Ol", "📝 Qeydiyyat"])
         
-        # --- LOG IN BÖLMƏSİ ---
         with tab_login:
             st.subheader("Sistemə Giriş")
             login_user = st.text_input("İstifadəçi adı:", key="login_user")
@@ -88,7 +110,6 @@ if not st.session_state.logged_in:
             
             if st.button("Daxil Ol"):
                 users_df = pd.read_csv(USERS_FILE)
-                # İstifadəçini bazada yoxlayırıq
                 user_match = users_df[(users_df['username'] == login_user) & (users_df['password'] == login_pass)]
                 
                 if not user_match.empty:
@@ -102,11 +123,9 @@ if not st.session_state.logged_in:
                 else:
                     st.error("❌ İstifadəçi adı və ya şifrə yanlışdır.")
         
-        # --- SIGN UP BÖLMƏSİ ---
         with tab_signup:
             st.subheader("Yeni Hesab Yarat")
-            st.markdown("Qeydiyyatdan keçən hər kəs avtomatik olaraq **User (İstifadəçi)** təyin edilir.")
-            new_name = st.text_input("Tam Adınız (Məs: Əli Əliyev):")
+            new_name = st.text_input("Tam Adınız:")
             new_username = st.text_input("Yeni İstifadəçi adı:")
             new_password = st.text_input("Yeni Şifrə:", type="password")
             
@@ -114,20 +133,18 @@ if not st.session_state.logged_in:
                 if new_name and new_username and new_password:
                     users_df = pd.read_csv(USERS_FILE)
                     if new_username in users_df['username'].values:
-                        st.error("⚠️ Bu istifadəçi adı artıq mövcuddur. Başqasını seçin.")
+                        st.error("⚠️ Bu istifadəçi adı artıq mövcuddur.")
                     else:
-                        # Yeni istifadəçini bazaya əlavə edirik
                         new_row = pd.DataFrame([{"username": new_username, "password": new_password, "role": "user", "name": new_name, "dept": "Yoxdur"}])
                         new_row.to_csv(USERS_FILE, mode='a', header=False, index=False)
-                        st.success("✅ Qeydiyyat uğurla tamamlandı! İndi sol tərəfdəki 'Daxil Ol' bölməsindən sistemə girə bilərsiniz.")
+                        st.success("✅ Qeydiyyat uğurla tamamlandı! 'Daxil Ol' bölməsindən giriş edə bilərsiniz.")
                 else:
-                    st.warning("Zəhmət olmasa bütün xanaları doldurun.")
+                    st.warning("Xanaları doldurun.")
 
 # ==========================================
-# 6. ƏSAS SİSTEM PANNELLƏRİ (LOG IN OLDUQDAN SONRA)
+# 5. ƏSAS SİSTEM (ROLLAR ÜZRƏ PANELLƏR)
 # ==========================================
 else:
-    # Üst məlumat və Çıxış düyməsi
     colA, colB = st.columns([4, 1])
     with colA:
         st.subheader(f"👋 Xoş gəldiniz, {st.session_state.name} ({st.session_state.role.upper()})")
@@ -137,10 +154,10 @@ else:
             st.rerun()
     st.markdown("---")
 
-    # ----------------- USER PANELİ (Ancaq şikayət göndərənlər) -----------------
+    # --- USER PANELİ ---
     if st.session_state.role == "user":
-        st.title("📝 Yeni Texniki Sorğu Yaradın")
-        user_input = st.text_area("Probleminizi ətraflı təsvir edin:", height=150)
+        st.title("📝 Yeni Texniki Sorğu")
+        user_input = st.text_area("Probleminizi daxil edin:", height=150)
         
         if st.button("Sorğunu Göndər"):
             if user_input.strip():
@@ -148,55 +165,48 @@ else:
                 agent_mapping = {"Şəbəkə": "Cavid Məmmədov", "Avadanlıq": "Orxan Əliyev", "Hesab_Problemi": "Aygün Həsənova", "Proqram_Təminatı": "Elvin Qasımov"}
                 assigned_agent = agent_mapping.get(prediction, "Ümumi Şöbə")
                 
-                # Sorğunu bazaya yazırıq
                 new_ticket = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.name, "Şikayət": user_input, "Kateqoriya": prediction, "Məsul_Şəxs": assigned_agent}])
                 new_ticket.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
                 
-                st.success(f"✅ Sorğunuz qeydə alındı! AI problemi **{prediction}** olaraq təsnif etdi.")
+                st.success(f"✅ Sorğunuz qeydə alındı! Kateqoriya: **{prediction}**")
                 st.info(f"👤 Məsul mütəxəssis: **{assigned_agent}**.")
             else:
-                st.warning("Problemi yazmadan göndərə bilməzsiniz.")
+                st.warning("Problemi yazın.")
 
-    # ----------------- ADMIN PANELİ (Mütəxəssislər) -----------------
+    # --- ADMIN PANELİ ---
     elif st.session_state.role == "admin":
-        st.title(f"🛠️ İş Paneli: {st.session_state.dept} Şöbəsi")
+        st.title(f"🛠️ İş Paneli: {st.session_state.dept}")
         tickets_df = pd.read_csv(TICKETS_FILE)
         my_tickets = tickets_df[tickets_df["Kateqoriya"] == st.session_state.dept]
         
         if my_tickets.empty:
-            st.success("🎉 Hazırda şöbənizə aid həll edilməmiş problem yoxdur!")
+            st.success("🎉 Şöbənizə aid yeni sorğu yoxdur!")
         else:
-            st.write(f"Aktiv sorğuların sayı: **{len(my_tickets)}**")
+            st.write(f"Aktiv sorğular: **{len(my_tickets)}**")
             st.dataframe(my_tickets, use_container_width=True)
 
-    # ----------------- SUPER ADMIN PANELİ (Kamran Muradov) -----------------
+    # --- SUPER ADMIN PANELİ ---
     elif st.session_state.role == "super_admin":
-        st.title("👑 Super Admin İdarəetmə Mərkəzi")
-        st.markdown("Sistemdəki bütün fəaliyyətlərə, şikayətlərə və istifadəçilərə tam nəzarət paneli.")
-        
-        tab_tickets, tab_users = st.tabs(["🗂️ Bütün Biletlər", "👥 Sistem İstifadəçiləri"])
+        st.title("👑 Super Admin Paneli")
+        tab_tickets, tab_users = st.tabs(["🗂️ Bütün Biletlər", "👥 İstifadəçilər"])
         
         with tab_tickets:
             tickets_df = pd.read_csv(TICKETS_FILE)
             if tickets_df.empty:
-                st.warning("Sistemə hələ heç bir sorğu daxil olmayıb.")
+                st.warning("Sistemə heç bir sorğu daxil olmayıb.")
             else:
                 col1, col2 = st.columns([1, 2])
                 with col1:
-                    st.metric("Ümumi Daxil Olan Sorğu", len(tickets_df))
-                    st.write("**Şöbələr üzrə statistika:**")
+                    st.metric("Ümumi Sorğu", len(tickets_df))
                     st.bar_chart(tickets_df["Kateqoriya"].value_counts(), color="#cc0000")
                 with col2:
-                    st.write("### Canlı Sorğu Bazası")
                     st.dataframe(tickets_df, use_container_width=True)
                 
-                if st.button("🗑️ Sorğu Bazasını Sıfırla"):
+                if st.button("🗑️ Bazasını Sıfırla"):
                     pd.DataFrame(columns=["Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Məsul_Şəxs"]).to_csv(TICKETS_FILE, index=False)
-                    st.success("Baza təmizləndi! Səhifəni yeniləyin.")
+                    st.success("Baza təmizləndi!")
+                    st.rerun()
                     
         with tab_users:
             users_df = pd.read_csv(USERS_FILE)
-            st.write("### Qeydiyyatdan Keçmiş Bütün Şəxslər")
-            # Şifrələri təhlükəsizlik üçün gizlədərək göstəririk
-            display_users = users_df.drop(columns=['password'])
-            st.dataframe(display_users, use_container_width=True)
+            st.dataframe(users_df.drop(columns=['password']), use_container_width=True)
