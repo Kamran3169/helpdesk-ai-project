@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - Səsli Bildiriş, Müasir İkonlar və Data Vizualizasiyası
+# Məqsəd: ASOIU IT Helpdesk AI - Qəbul Et (Accept) Məntiqi, Qrafiklər və Bildirişlər
 
 import streamlit as st
 import pandas as pd
@@ -46,7 +46,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Səs Oynatmaq üçün Funksiya (WhatsApp iOS Pop Sound)
 def play_notification_sound():
     audio_html = """
         <audio autoplay="true">
@@ -56,13 +55,13 @@ def play_notification_sound():
     st.markdown(audio_html, unsafe_allow_html=True)
 
 # ==========================================
-# 2. DİL SÖZLÜYÜ (Müasir İkonlar)
+# 2. DİL SÖZLÜYÜ (Təzə Düymələr Əlavə Edildi)
 # ==========================================
 LANG = {
-    "AZE": {"welcome": "Sistemə Xoş Gəldiniz", "login_tab": "Daxil Ol", "signup_tab": "Qeydiyyat", "user": "İstifadəçi adı", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Parolumu Unutdum", "name": "Tam Adınız", "signup_btn": "Qeydiyyatdan Keç", "logout": "Çıxış Et", "new_ticket": "Yeni Sorğu", "desc": "Problemi daxil edin:", "send": "Göndər", "stats": "Statistika", "my_tickets": "Göndərdiyim sorğular", "exam": "Admin İmtahanı", "admin_panel": "İş Paneli", "solved_by_me": "Həll etdiklərim", "open_tickets": "Açıq Sorğular", "mark_solved": "Həll edildi", "download_csv": "☁️ CSV Yüklə"},
-    "ENG": {"welcome": "Welcome to the System", "login_tab": "Log In", "signup_tab": "Sign Up", "user": "Username", "pass": "Password", "login_btn": "Log In", "forgot": "Forgot Password", "name": "Full Name", "signup_btn": "Sign Up", "logout": "Log Out", "new_ticket": "New Ticket", "desc": "Describe the problem:", "send": "Submit", "stats": "Statistics", "my_tickets": "Submitted", "exam": "Admin Exam", "admin_panel": "Work Panel", "solved_by_me": "Resolved by me", "open_tickets": "Open Tickets", "mark_solved": "Mark Resolved", "download_csv": "☁️ Download CSV"},
-    "RUS": {"welcome": "Добро пожаловать", "login_tab": "Войти", "signup_tab": "Регистрация", "user": "Имя пользователя", "pass": "Пароль", "login_btn": "Войти", "forgot": "Забыл пароль", "name": "Полное имя", "signup_btn": "Зарегистрироваться", "logout": "Выйти", "new_ticket": "Новый запрос", "desc": "Опишите проблему:", "send": "Отправить", "stats": "Статистика", "my_tickets": "Мои запросы", "exam": "Экзамен Админа", "admin_panel": "Панель", "solved_by_me": "Решенные мной", "open_tickets": "Открытые", "mark_solved": "Решено", "download_csv": "☁️ Скачать CSV"},
-    "TR": {"welcome": "Sisteme Hoş Geldiniz", "login_tab": "Giriş Yap", "signup_tab": "Kayıt Ol", "user": "Kullanıcı Adı", "pass": "Şifre", "login_btn": "Giriş Yap", "forgot": "Şifremi Unuttum", "name": "Tam Adınız", "signup_btn": "Kayıt Ol", "logout": "Çıkış Yap", "new_ticket": "Yeni Talep", "desc": "Sorunu açıklayın:", "send": "Gönder", "stats": "İstatistikler", "my_tickets": "Taleplerim", "exam": "Admin Sınavı", "admin_panel": "Çalışma Paneli", "solved_by_me": "Çözdüklerim", "open_tickets": "Açık Talepler", "mark_solved": "Çözüldü", "download_csv": "☁️ CSV İndir"}
+    "AZE": {"welcome": "Sistemə Xoş Gəldiniz", "login_tab": "Daxil Ol", "signup_tab": "Qeydiyyat", "user": "İstifadəçi adı", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Parolumu Unutdum", "name": "Tam Adınız", "signup_btn": "Qeydiyyatdan Keç", "logout": "Çıxış Et", "new_ticket": "Yeni Sorğu", "desc": "Problemi daxil edin:", "send": "Göndər", "stats": "Statistika", "my_tickets": "Göndərdiyim sorğular", "exam": "Admin İmtahanı", "admin_panel": "İş Paneli", "solved_by_me": "Həll etdiklərim", "open_tickets": "Açıq (Gözləyən) Sorğular", "mark_solved": "Həll edildi kimi təsdiqlə", "download_csv": "☁️ CSV Yüklə", "accept_ticket": "İcraya Götür", "my_active": "İcradakı Sorğularım"},
+    "ENG": {"welcome": "Welcome to the System", "login_tab": "Log In", "signup_tab": "Sign Up", "user": "Username", "pass": "Password", "login_btn": "Log In", "forgot": "Forgot Password", "name": "Full Name", "signup_btn": "Sign Up", "logout": "Log Out", "new_ticket": "New Ticket", "desc": "Describe the problem:", "send": "Submit", "stats": "Statistics", "my_tickets": "Submitted", "exam": "Admin Exam", "admin_panel": "Work Panel", "solved_by_me": "Resolved by me", "open_tickets": "Open Tickets", "mark_solved": "Mark Resolved", "download_csv": "☁️ Download CSV", "accept_ticket": "Accept Ticket", "my_active": "My Active Tickets"},
+    "RUS": {"welcome": "Добро пожаловать", "login_tab": "Войти", "signup_tab": "Регистрация", "user": "Имя пользователя", "pass": "Пароль", "login_btn": "Войти", "forgot": "Забыл пароль", "name": "Полное имя", "signup_btn": "Зарегистрироваться", "logout": "Выйти", "new_ticket": "Новый запрос", "desc": "Опишите проблему:", "send": "Отправить", "stats": "Статистика", "my_tickets": "Мои запросы", "exam": "Экзамен Админа", "admin_panel": "Панель", "solved_by_me": "Решенные мной", "open_tickets": "Открытые (В ожидании)", "mark_solved": "Решено", "download_csv": "☁️ Скачать CSV", "accept_ticket": "Принять в работу", "my_active": "Мои активные задачи"},
+    "TR": {"welcome": "Sisteme Hoş Geldiniz", "login_tab": "Giriş Yap", "signup_tab": "Kayıt Ol", "user": "Kullanıcı Adı", "pass": "Şifre", "login_btn": "Giriş Yap", "forgot": "Şifremi Unuttum", "name": "Tam Adınız", "signup_btn": "Kayıt Ol", "logout": "Çıkış Yap", "new_ticket": "Yeni Talep", "desc": "Sorunu açıklayın:", "send": "Gönder", "stats": "İstatistikler", "my_tickets": "Taleplerim", "exam": "Admin Sınavı", "admin_panel": "Çalışma Paneli", "solved_by_me": "Çözdüklerim", "open_tickets": "Açık Talepler", "mark_solved": "Çözüldü Olarak Onayla", "download_csv": "☁️ CSV İndir", "accept_ticket": "Görevi Al", "my_active": "İşlemdeki Taleplerim"}
 }
 
 st.sidebar.title("🌍 Language")
@@ -201,13 +200,12 @@ else:
 
     tickets_df = pd.read_csv(TICKETS_FILE)
 
-    # --- SƏSLİ BİLDİRİŞ SİSTEMİ ---
     if st.session_state.role in ["admin", "super_admin"]:
         if 'last_ticket_count' not in st.session_state:
             st.session_state.last_ticket_count = len(tickets_df)
         elif len(tickets_df) > st.session_state.last_ticket_count:
             st.toast("🔔 Yeni sorğu daxil oldu!", icon="⚡")
-            play_notification_sound()  # iPhone/WhatsApp səsi oynadılır
+            play_notification_sound()
             st.session_state.last_ticket_count = len(tickets_df)
 
     colA, colB = st.columns([4, 1])
@@ -229,7 +227,7 @@ else:
                     submit_ticket = st.form_submit_button(t['send'], type="primary")
                     if submit_ticket and user_input.strip():
                         pred = model.predict([user_input])[0]
-                        new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq"}])
+                        new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred, "Məsul_Şəxs": "Təyin Edilməyib", "Status": "Açıq"}])
                         new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
                         st.success(f"✅ Kateqoriya: {pred}")
             with col_stat:
@@ -261,35 +259,54 @@ else:
                         st.success("🎉 TƏBRİKLƏR! Siz artıq Adminsiniz. Çıxış edib yenidən daxil olun.")
                     else: st.error("Kəsildiniz. Yenidən cəhd edin.")
 
-    # --- ADMIN PANELİ ---
+    # --- ADMIN PANELİ (Qəbul Et Məntiqi İlə) ---
     elif st.session_state.role == "admin":
         st.title(f"⚡ {t['admin_panel']}: {st.session_state.dept}")
         col_main, col_stat = st.columns([3, 1])
         with col_main:
-            my_tickets = tickets_df[(tickets_df["Kateqoriya"] == st.session_state.dept) & (tickets_df["Status"] == "Açıq")]
-            st.write(f"### 📬 {t['open_tickets']}: {len(my_tickets)}")
-            st.dataframe(my_tickets, use_container_width=True)
-            if not my_tickets.empty:
+            # 1. AÇIQ (GÖZLƏYƏN) SORĞULAR VƏ QƏBUL ETMƏK
+            st.write(f"### 📬 {t['open_tickets']}")
+            open_tickets = tickets_df[(tickets_df["Kateqoriya"] == st.session_state.dept) & (tickets_df["Status"] == "Açıq")]
+            st.dataframe(open_tickets, use_container_width=True)
+            
+            if not open_tickets.empty:
+                with st.form("accept_ticket_form"):
+                    accept_id = st.selectbox("İndeksi seçin:", open_tickets.index)
+                    submit_accept = st.form_submit_button(t['accept_ticket'], type="primary")
+                    if submit_accept:
+                        tickets_df.loc[accept_id, "Status"] = "İcrada"
+                        tickets_df.loc[accept_id, "Məsul_Şəxs"] = st.session_state.username
+                        tickets_df.to_csv(TICKETS_FILE, index=False)
+                        st.success("✅ Sorğu İcraya Götürüldü!")
+                        st.rerun()
+            
+            st.markdown("---")
+            
+            # 2. İCRADAKI SORĞULAR VƏ HƏLL ETMƏK
+            st.write(f"### ⏳ {t['my_active']}")
+            active_tickets = tickets_df[(tickets_df["Məsul_Şəxs"] == st.session_state.username) & (tickets_df["Status"] == "İcrada")]
+            st.dataframe(active_tickets, use_container_width=True)
+            
+            if not active_tickets.empty:
                 with st.form("close_ticket_form"):
-                    close_id = st.selectbox("Təsdiqləmək üçün sorğunun indeksini seçin (Sol sütun):", my_tickets.index)
+                    close_id = st.selectbox("İndeksi seçin:", active_tickets.index)
                     submit_close = st.form_submit_button(t['mark_solved'], type="primary")
                     if submit_close:
                         tickets_df.loc[close_id, "Status"] = "Həll edildi"
-                        tickets_df.loc[close_id, "Məsul_Şəxs"] = st.session_state.username
                         tickets_df.to_csv(TICKETS_FILE, index=False)
-                        st.success("✅ Sorğu 'Həll Edildi' olaraq təsdiqləndi!")
+                        st.success("✅ Sorğu 'Həll Edildi' olaraq bağlandı!")
                         st.rerun() 
+                        
         with col_stat:
             solved_count = len(tickets_df[(tickets_df['Məsul_Şəxs'] == st.session_state.username) & (tickets_df['Status'] == 'Həll edildi')])
             st.info(f"📈 **{t['stats']}**\n\n{t['solved_by_me']}: **{solved_count}**")
 
-    # --- SUPER ADMIN PANELİ (Data Vizualizasiyası ilə) ---
+    # --- SUPER ADMIN PANELİ ---
     elif st.session_state.role == "super_admin":
         st.title("🛡️ Super Admin Paneli")
         
-        # Üst Panel: Statistika və Yükləmə
         col_m1, col_m2, col_m3 = st.columns([1, 1, 2])
-        col_m1.metric("Ümumi Baza Sorğuları", len(tickets_df))
+        col_m1.metric("Ümumi Sorğular", len(tickets_df))
         col_m2.metric("Açıq Sorğular", len(tickets_df[tickets_df['Status']=='Açıq']))
         with col_m3:
             csv_data = tickets_df.to_csv(index=False).encode('utf-8')
@@ -297,20 +314,14 @@ else:
         
         st.markdown("---")
         
-        # Qrafiklər Bölməsi (Plotly)
         st.write("### 📊 Ümumi Sistem Analitikası")
         if not tickets_df.empty:
             col_chart1, col_chart2 = st.columns(2)
-            
-            # 1. Donut Chart (Kateqoriyalar Üzrə)
             cat_counts = tickets_df["Kateqoriya"].value_counts().reset_index()
             cat_counts.columns = ["Kateqoriya", "Say"]
-            fig_donut = px.pie(cat_counts, names="Kateqoriya", values="Say", hole=0.5, 
-                               title="Şöbələr Üzrə Yük Dağılımı", color_discrete_sequence=px.colors.sequential.RdBu)
+            fig_donut = px.pie(cat_counts, names="Kateqoriya", values="Say", hole=0.5, title="Şöbələr Üzrə Yük Dağılımı", color_discrete_sequence=px.colors.sequential.RdBu)
             col_chart1.plotly_chart(fig_donut, use_container_width=True)
             
-            # 2. Line Chart (Günlük Trendlər)
-            # Tarixi formata salırıq ki, qrafik günləri birləşdirə bilsin
             tickets_df['Tarix_Gun'] = pd.to_datetime(tickets_df['Tarix'], errors='coerce').dt.date
             daily_counts = tickets_df.groupby('Tarix_Gun').size().reset_index(name='Say')
             fig_line = px.line(daily_counts, x='Tarix_Gun', y='Say', title="Günlük Daxil Olan Sorğuların Dinamikası", markers=True)
@@ -321,14 +332,12 @@ else:
 
         st.markdown("---")
         
-        # Sekməli İdarəetmə Paneli
         all_categories = ["Bütün Sorğular", "Şəbəkə", "Avadanlıq", "Hesab_Problemi", "Proqram_Təminatı", "Təhlükəsizlik", "Məlumat_Bazası"]
         cat_tabs = st.tabs([f"📂 {c}" for c in all_categories])
         
         for i, cat in enumerate(all_categories):
             with cat_tabs[i]:
-                if cat == "Bütün Sorğular": 
-                    st.dataframe(tickets_df.drop(columns=['Tarix_Gun'], errors='ignore'), use_container_width=True)
+                if cat == "Bütün Sorğular": st.dataframe(tickets_df.drop(columns=['Tarix_Gun'], errors='ignore'), use_container_width=True)
                 else:
                     filtered_df = tickets_df[tickets_df["Kateqoriya"] == cat]
                     st.write(f"**{cat}** üzrə cəmi sorğu: **{len(filtered_df)}**")
