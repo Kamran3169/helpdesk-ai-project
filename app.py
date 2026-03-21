@@ -17,12 +17,12 @@ except ImportError:
 # ==========================================
 # GEMİNİ PRO API İNTEQRASİYASI (BEYİN BURADADIR)
 # ==========================================
-# DİQQƏT: Google AI Studio-dan aldığınız API Key-i bura yapışdırın:
-GEMINI_API_KEY = "AIzaSyDGEjFJuYSAC8hgZineWuIcGMZoakOuntY"
+GEMINI_API_KEY = "AIzaSyDGEjFJuYSAC8hgZineWuIcGMZoakOuntY" # <--- Öz açarınızı bura yazın
 
-if GEMINI_API_KEY != "BURAYA_API_AÇARINIZI_YAZIN":
+if GEMINI_API_KEY != "AIzaSyDGEjFJuYSAC8hgZineWuIcGMZoakOuntY":
     genai.configure(api_key=GEMINI_API_KEY)
-    gemini_model = genai.GenerativeModel('gemini-1.5-pro')
+    # Pro əvəzinə Flash modelindən istifadə edirik (Helpdesk kimi anlıq cavablar üçün daha sürətlidir)
+    gemini_model = genai.GenerativeModel('gemini-1.5-flash') 
 else:
     gemini_model = None
 
@@ -31,25 +31,26 @@ def ask_gemini(user_text):
         return "Xəta", "API Açarı daxil edilməyib."
         
     prompt = f"""
-    Sən ASOIU IT Helpdesk mütəxəssisisən (Süni İntellekt). İstifadəçi belə bir texniki şikayət yazıb: "{user_input}"
+    Sən ASOIU IT Helpdesk mütəxəssisisən (Süni İntellekt). İstifadəçi belə bir texniki şikayət yazıb: "{user_text}"
     
     Vəzifən bu problemi analiz etmək və MÜTLƏQ AŞAĞIDAKI FORMATDA (2 hissəli, arada | işarəsi olmaqla) cavab verməkdir. Başqa heç bir söz yazma!
     KATEQORİYA|HƏLL
     
     Qaydalar:
     1. KATEQORİYA tam olaraq bunlardan biri olmalıdır: Şəbəkə, Avadanlıq, Hesab_Problemi, Proqram_Təminatı, Təhlükəsizlik, Məlumat_Bazası.
-    2. HƏLL: Əgər bu problem istifadəçinin özünün edə biləcəyi proqram/şifrə/restart/təmizləmə kimi sadə uzaqdan həll edilə bilən problemdirsə, bura qısa və peşəkar Azərbaycan dilində (ə, ı, ö hərfləri ilə) həll yolunu yaz.
+    2. HƏLL: Əgər bu problem istifadəçinin özünün edə biləcəyi proqram/şifrə/restart/təmizləmə kimi sadə uzaqdan həll edilə bilən problemdirsə, bura qısa və peşəkar Azərbaycan dilində həll yolunu yaz.
     Əgər problem FİZİKİ MÜDAXİLƏ (kabel qırılıb, noutbuk yanıb, detal dəyişməlidir) tələb edirsə, HƏLL yerinə tam olaraq İNSAN sözünü yaz.
     """
     try:
         response = gemini_model.generate_content(prompt)
         result = response.text.strip().split('|')
-        if len(result) == 2:
+        if len(result) >= 2:
             return result[0].strip(), result[1].strip()
         else:
             return "Ümumi_Şöbə", "İNSAN"
     except Exception as e:
-        return "Xəta", "Gemini API ilə əlaqə qurulmadı."
+        # Əgər API ilə bağlı yenə problem olarsa, xətanın əsl səbəbini bizə göstərəcək
+        return "Xəta", f"API Xətası: {str(e)}"
 
 # ==========================================
 # 1. DİZAYN VƏ SƏHİFƏ TƏNZİMLƏMƏLƏRİ
