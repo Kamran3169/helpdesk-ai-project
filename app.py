@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import os
+import random
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import RandomForestClassifier
@@ -19,7 +20,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# İşçilər bazası
 employees = {
     "Şəbəkə": "Cavid Məmmədov (Şəbəkə Administratoru)",
     "Avadanlıq": "Orxan Əliyev (Texniki Dəstək Mütəxəssisi)",
@@ -31,15 +31,27 @@ employees = {
 def load_or_train_model():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     model_path = os.path.join(current_dir, 'helpdesk_classifier_model.pkl')
-    data_path = os.path.join(current_dir, 'data', 'tickets.csv')
     
     try:
         # Əvvəlcə hazır modeli oxumağa çalışır
         return joblib.load(model_path)
-    except Exception as e:
-        # Xəta olarsa (fayl zədələnibsə), Özünü Bərpa Etmə prosesi işə düşür
-        st.toast("Model zədəlidir, avtomatik bərpa edilir...", icon="🔄")
-        df = pd.read_csv(data_path)
+    except Exception:
+        # FAYLLAR TAPILMADIQDA BİRBAŞA YADDAŞDA ÖYRƏNİR (TAM MÜSTƏQİL)
+        st.toast("Model buludda yenidən qurulur...", icon="🧠")
+        
+        network_issues = ["Korpustakı Wi-Fi şəbəkəsinə qoşulmur", "İnternet bağlantısı qırılır", "IP xətası verir", "Lan kabeli qırılıb"]
+        hardware_issues = ["Noutbuk donur və mavi ekran verir", "Proyektor işləmir", "Printer çap etmir", "RAM problemi var, donur", "SSD xarab olub", "Ana plata yandı"]
+        account_issues = ["Korporativ mailimə giriş edə bilmirəm", "Moodle parolumu unutmuşam", "Hesabım bloklanıb", "Active Directory-də hesabım silinib"]
+        software_issues = ["Office proqramları lisenziya xətası verir", "Python PATH problemi", "Windows update dondu", "Antivirus yenilənmir"]
+
+        data = []
+        for _ in range(80):
+            data.append({"ticket_text": random.choice(network_issues), "category": "Şəbəkə"})
+            data.append({"ticket_text": random.choice(hardware_issues), "category": "Avadanlıq"})
+            data.append({"ticket_text": random.choice(account_issues), "category": "Hesab_Problemi"})
+            data.append({"ticket_text": random.choice(software_issues), "category": "Proqram_Təminatı"})
+
+        df = pd.DataFrame(data)
         pipeline = Pipeline([
             ('tfidf', TfidfVectorizer()),
             ('clf', RandomForestClassifier(n_estimators=100, random_state=42))
@@ -47,7 +59,6 @@ def load_or_train_model():
         pipeline.fit(df['ticket_text'], df['category'])
         return pipeline
 
-# Modeli yükləyirik (və ya avtomatik yaradırıq)
 model = load_or_train_model()
 
 st.title("IT Sorğularının Avtomatlaşdırılmış Təsnifatı")
@@ -57,32 +68,25 @@ tab1, tab2 = st.tabs(["📝 Anında Analiz", "📁 Toplu CSV Analizi"])
 
 with tab1:
     user_input = st.text_area("İstifadəçi Şikayəti:", height=120, placeholder="Məsələn: SSD yaddaş xarab olub...")
-    
     if st.button("Təhlil Et və Yönləndir"):
         if user_input.strip():
             prediction = model.predict([user_input])[0]
             assigned_agent = employees.get(prediction, "Ümumi Dəstək Şöbəsi")
-            
             st.success(f"📌 **Təyin Edilmiş Kateqoriya:** {prediction}")
             st.info(f"👤 **Sorğu Təyin Edildi:** {assigned_agent}")
-            st.write(f"Sizin sorğunuz icraya götürüldü. Tezliklə {assigned_agent.split(' ')[0]} sizinlə əlaqə saxlayacaq.")
         else:
             st.warning("Zəhmət olmasa problemi tam ifadə edin.")
 
 with tab2:
     st.markdown("İçərisində **`ticket_text`** sütunu olan CSV faylını bura yükləyin.")
     uploaded_file = st.file_uploader("Data Faylını Seçin", type=["csv"])
-    
     if uploaded_file:
         df = pd.read_csv(uploaded_file)
         if 'ticket_text' in df.columns:
             df['Təyin_Edilmiş_Kateqoriya'] = model.predict(df['ticket_text'].fillna(""))
             df['Təyin_Edilmiş_Əməkdaş'] = df['Təyin_Edilmiş_Kateqoriya'].map(employees)
-            
-            st.write("### Nəticənin Önizləməsi (İlk 5 sətir):")
             st.dataframe(df.head())
-            
             csv_data = df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 İşçilər Üzrə Bölünmüş CSV-ni Endir", data=csv_data, file_name='is_bolgusu_ticketler.csv', mime='text/csv')
+            st.download_button("📥 İşçilər Üzrə Bölünmüş CSV-ni Endir", data=csv_data, file_name='is_bolgusu.csv', mime='text/csv')
         else:
-            st.error("Xəta: Yüklədiyiniz faylda 'ticket_text' adlı sütun yoxdur.")
+            st.error("Xəta: 'ticket_text' adlı sütun yoxdur.")
