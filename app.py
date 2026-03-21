@@ -33,12 +33,9 @@ def load_or_train_model():
     model_path = os.path.join(current_dir, 'helpdesk_classifier_model.pkl')
     
     try:
-        # Əvvəlcə hazır modeli oxumağa çalışır
         return joblib.load(model_path)
     except Exception:
-        # FAYLLAR TAPILMADIQDA BİRBAŞA YADDAŞDA ÖYRƏNİR (TAM MÜSTƏQİL)
-        st.toast("Model buludda yenidən qurulur...", icon="🧠")
-        
+        # Cache xətasına səbəb olan st.toast sətiri silindi. Model arxa planda səssizcə qurulacaq.
         network_issues = ["Korpustakı Wi-Fi şəbəkəsinə qoşulmur", "İnternet bağlantısı qırılır", "IP xətası verir", "Lan kabeli qırılıb"]
         hardware_issues = ["Noutbuk donur və mavi ekran verir", "Proyektor işləmir", "Printer çap etmir", "RAM problemi var, donur", "SSD xarab olub", "Ana plata yandı"]
         account_issues = ["Korporativ mailimə giriş edə bilmirəm", "Moodle parolumu unutmuşam", "Hesabım bloklanıb", "Active Directory-də hesabım silinib"]
