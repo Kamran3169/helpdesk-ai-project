@@ -1,66 +1,76 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - Gemini Pro İnteqrasiyası (Əsl Generativ AI)
+# Məqsəd: ASOIU IT Helpdesk AI - Qüsursuz Gemini 1.5 Flash İnteqrasiyası ilə Tam İşlək Sistem
 
 import streamlit as st
 import pandas as pd
 import os
+import random
 from datetime import datetime
 import plotly.express as px
-import google.generativeai as genai
 
 try:
     from streamlit_autorefresh import st_autorefresh
 except ImportError:
     st_autorefresh = None
 
-# ==========================================
-# GEMİNİ PRO API İNTEQRASİYASI (BEYİN BURADADIR)
-# ==========================================
-GEMINI_API_KEY = "AIzaSyDGEjFJuYSAC8hgZineWuIcGMZoakOuntY" # <--- Öz açarınızı bura yazın
+try:
+    import google.generativeai as genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
 
-if GEMINI_API_KEY != "AIzaSyDGEjFJuYSAC8hgZineWuIcGMZoakOuntY":
-    genai.configure(api_key=AIzaSyDGEjFJuYSAC8hgZineWuIcGMZoakOuntY)
-    # Pro əvəzinə Flash modelindən istifadə edirik (Helpdesk kimi anlıq cavablar üçün daha sürətlidir)
-    gemini_model = genai.GenerativeModel('gemini-1.5-flash') 
-else:
-    gemini_model = None
+# ==========================================
+# 1. GEMİNİ API TƏNZİMLƏMƏLƏRİ (DƏQİQ VƏ ZİREHLİ MƏNTİQ)
+# ==========================================
+# DİQQƏT: Google AI Studio-dan aldığınız şifrəni aşağıdakı dırnaqların içinə yazın!
+GEMINI_API_KEY = "AIzaSyC7qU8BBAYKGC2sNnhmthsa2oBtAy9nBTY"
 
 def ask_gemini(user_text):
-    if not gemini_model:
-        return "Xəta", "API Açarı daxil edilməyib."
-        
-    prompt = f"""
-    Sən ASOIU IT Helpdesk mütəxəssisisən (Süni İntellekt). İstifadəçi belə bir texniki şikayət yazıb: "{user_text}"
+    if not GENAI_AVAILABLE:
+        return "Xəta", "google-generativeai kitabxanası yüklənməyib. requirements.txt faylını yoxlayın."
     
-    Vəzifən bu problemi analiz etmək və MÜTLƏQ AŞAĞIDAKI FORMATDA (2 hissəli, arada | işarəsi olmaqla) cavab verməkdir. Başqa heç bir söz yazma!
-    KATEQORİYA|HƏLL
-    
-    Qaydalar:
-    1. KATEQORİYA tam olaraq bunlardan biri olmalıdır: Şəbəkə, Avadanlıq, Hesab_Problemi, Proqram_Təminatı, Təhlükəsizlik, Məlumat_Bazası.
-    2. HƏLL: Əgər bu problem istifadəçinin özünün edə biləcəyi proqram/şifrə/restart/təmizləmə kimi sadə uzaqdan həll edilə bilən problemdirsə, bura qısa və peşəkar Azərbaycan dilində həll yolunu yaz.
-    Əgər problem FİZİKİ MÜDAXİLƏ (kabel qırılıb, noutbuk yanıb, detal dəyişməlidir) tələb edirsə, HƏLL yerinə tam olaraq İNSAN sözünü yaz.
-    """
+    if GEMINI_API_KEY == "AIzaSyC7qU8BBAYKGC2sNnhmthsa2oBtAy9nBTY" or not GEMINI_API_KEY:
+        return "Xəta", "API Açarı daxil edilməyib. Kodun 25-ci sətrini yoxlayın."
+
     try:
-        response = gemini_model.generate_content(prompt)
-        result = response.text.strip().split('|')
-        if len(result) >= 2:
-            return result[0].strip(), result[1].strip()
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        prompt = f"""
+        Sən ASOIU IT Helpdesk mütəxəssisisən. İstifadəçi şikayəti: "{user_text}"
+        
+        MÜTLƏQ YALNIZ BU FORMATDA CAVAB VER (arada | işarəsi olmaqla):
+        KATEQORİYA|HƏLL
+        
+        Qaydalar:
+        1. KATEQORİYA bunlardan biri olmalıdır: Şəbəkə, Avadanlıq, Hesab_Problemi, Proqram_Təminatı, Təhlükəsizlik, Məlumat_Bazası.
+        2. HƏLL: Əgər sadə (parol, donma, internet zəifliyi) problemdirsə, həll yolunu yaz. Əgər qəliz/fiziki problemdirsə yalnız İNSAN yaz.
+        DİQQƏT: Əlavə heç bir simvol, salamlaşma və ya ``` istifadə etmə.
+        """
+        
+        response = model.generate_content(prompt)
+        # Gələn cavabı təmizləyirik (əgər AI əlavə simvol qatarsa)
+        clean_text = response.text.replace('`', '').replace('text', '').replace('\n', ' ').strip()
+        
+        if '|' in clean_text:
+            parts = clean_text.split('|', 1)
+            return parts[0].strip(), parts[1].strip()
         else:
             return "Ümumi_Şöbə", "İNSAN"
+            
     except Exception as e:
-        # Əgər API ilə bağlı yenə problem olarsa, xətanın əsl səbəbini bizə göstərəcək
-        return "Xəta", f"API Xətası: {str(e)}"
+        return "Xəta", f"Detallı API Xətası: {str(e)}"
 
 # ==========================================
-# 1. DİZAYN VƏ SƏHİFƏ TƏNZİMLƏMƏLƏRİ
+# 2. DİZAYN VƏ SƏHİFƏ TƏNZİMLƏMƏLƏRİ
 # ==========================================
-st.set_page_config(page_title="ASOIU IT Helpdesk AI (Gemini Powered)", page_icon="💠", layout="wide")
+st.set_page_config(page_title="ASOIU IT Helpdesk AI", page_icon="💠", layout="wide")
 st.markdown("""
 <style>
     .stApp {
         background-color: #ffffff;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffecec' fill-opacity='1' d='M0,224L48,213.3C96,203,192,181,288,186.7C384,192,480,224,576,218.7C672,213,768,171,864,149.3C960,128,1056,128,1152,144C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffecec' fill-opacity='1' d='M0,224L48,213.3C96,203,192,181,288,186.7C384,192,480,224,576,218.7C672,213,768,171,864,149.3C960,128,1056,128,1152,144C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
         background-attachment: fixed; background-size: cover;
     }
     h1, h2, h3, p, label, .stMarkdown { color: #5c0000 !important; }
@@ -78,10 +88,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def play_notification_sound():
-    st.markdown("""<audio autoplay="true"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"></audio>""", unsafe_allow_html=True)
+    st.markdown("""<audio autoplay="true"><source src="[https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3](https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3)" type="audio/mpeg"></audio>""", unsafe_allow_html=True)
 
 # ==========================================
-# 2. DİL SÖZLÜYÜ
+# 3. DİL SÖZLÜYÜ VƏ BAZA TƏNZİMLƏMƏLƏRİ
 # ==========================================
 LANG = {
     "AZE": {"welcome": "Sistemə Xoş Gəldiniz (Gemini AI)", "login_tab": "Daxil Ol", "signup_tab": "Qeydiyyat", "user": "İstifadəçi adı", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Parolumu Unutdum", "name": "Tam Adınız", "signup_btn": "Qeydiyyatdan Keç", "logout": "Çıxış Et", "new_ticket": "Yeni Sorğu", "desc": "Problemi daxil edin:", "send": "Göndər", "stats": "Statistika", "my_tickets": "Göndərdiyim sorğular", "exam": "Admin İmtahanı", "admin_panel": "İş Paneli", "solved_by_me": "Həll etdiklərim", "open_tickets": "Açıq (Gözləyən) Sorğular", "mark_solved": "Həll edildi kimi təsdiqlə", "download_csv": "☁️ CSV Yüklə", "accept_ticket": "İcraya Götür", "my_active": "İcradakı Sorğularım"}
@@ -90,9 +100,6 @@ st.sidebar.title("🌍 Language")
 sel_lang = st.sidebar.radio("", ["AZE"], horizontal=True, label_visibility="collapsed")
 t = LANG[sel_lang]
 
-# ==========================================
-# 3. VERİLƏNLƏR BAZASI
-# ==========================================
 os.makedirs('data', exist_ok=True)
 USERS_FILE = "data/users_db.csv"
 TICKETS_FILE = "data/live_tickets.csv"
@@ -121,9 +128,7 @@ if 'show_forgot_pass' not in st.session_state: st.session_state.show_forgot_pass
 
 if not st.session_state.logged_in:
     st.markdown(f"<h1 style='text-align: center;'>{t['welcome']}</h1>", unsafe_allow_html=True)
-    if GEMINI_API_KEY == "BURAYA_API_AÇARINIZI_YAZIN":
-        st.warning("⚠️ DİQQƏT: Gemini API Açarı daxil edilməyib. Zəhmət olmasa kodun 22-ci sətrinə API Key-i yazın.")
-        
+    
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if not st.session_state.show_forgot_pass:
@@ -140,7 +145,7 @@ if not st.session_state.logged_in:
                             u = user_match.iloc[0]
                             st.session_state.update({"logged_in": True, "username": u['username'], "role": u['role'], "name": u['name'], "dept": u['dept']})
                             st.rerun()
-                        else: st.error("❌ Xəta / Error")
+                        else: st.error("❌ İstifadəçi adı və ya şifrə səhvdir.")
                 if st.button(f"❓ {t['forgot']}", type="primary"):
                     st.session_state.show_forgot_pass = True
                     st.rerun()
@@ -152,7 +157,7 @@ if not st.session_state.logged_in:
                     submit_signup = st.form_submit_button(t['signup_btn'], type="primary")
                     if submit_signup:
                         pd.DataFrame([{"username": new_user, "password": new_pass, "role": "user", "name": new_name, "dept": "Yoxdur"}]).to_csv(USERS_FILE, mode='a', header=False, index=False)
-                        st.success("✅ OK")
+                        st.success("✅ Hesab yaradıldı!")
         else:
             with st.form("reset_pass_form"):
                 st.subheader("🔄 Şifrənin Yenilənməsi")
@@ -171,7 +176,7 @@ if not st.session_state.logged_in:
                     st.rerun()
 
 # ==========================================
-# 5. ƏSAS SİSTEM (GEMİNİ İLƏ İŞLƏYƏN)
+# 5. ƏSAS SİSTEM VƏ VİZUALİZASİYA
 # ==========================================
 else:
     if st.session_state.role in ["admin", "super_admin"] and st_autorefresh:
@@ -206,25 +211,24 @@ else:
                     submit_ticket = st.form_submit_button(t['send'], type="primary")
                     
                     if submit_ticket and user_input.strip():
-                        with st.spinner("🧠 Gemini Pro problemi təhlil edir..."):
-                            # GEMİNİ-YƏ MÜRACİƏT EDİRİK
+                        with st.spinner("🧠 Gemini problemi təhlil edir..."):
                             pred_category, ai_reply = ask_gemini(user_input)
                             
-                        agent_mapping = {"Şəbəkə": "Şəbəkə Şöbəsi", "Avadanlıq": "Texniki Dəstək", "Hesab_Problemi": "Hesab Qeydiyyatı", "Proqram_Təminatı": "Proqram Təminatı", "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi", "Məlumat_Bazası": "Baza Administratoru"}
-                        assigned_dept = agent_mapping.get(pred_category, "Ümumi Şöbə")
-                        
-                        if ai_reply != "İNSAN" and ai_reply != "API Açarı daxil edilməyib.":
-                            # Gemini problemi özü həll edə bildi!
-                            new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Gemini AI 🤖", "Status": "Həll edildi"}])
-                            new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                            st.success(f"⚡ Gemini AI probleminizi saniyələr içində təhlil etdi! (Kateqoriya: {pred_category})")
-                            st.info(f"🤖 **Gemini Həll Yolu:** {ai_reply}")
+                        if pred_category == "Xəta":
+                            st.error(f"Sistem Xətası: {ai_reply}")
                         else:
-                            # Problem qəlizdirsə İnsana gedir!
-                            new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq"}])
-                            new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                            st.success(f"✅ Sorğu qeydə alındı. Təyin edilən şöbə: {assigned_dept} ({pred_category})")
-                            if ai_reply == "API Açarı daxil edilməyib.": st.error("Sistemdə Gemini API aktiv deyil, xəbərdarlıq yalnız adminə aiddir.")
+                            agent_mapping = {"Şəbəkə": "Şəbəkə Şöbəsi", "Avadanlıq": "Texniki Dəstək", "Hesab_Problemi": "Hesab Qeydiyyatı", "Proqram_Təminatı": "Proqram Təminatı", "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi", "Məlumat_Bazası": "Baza Administratoru"}
+                            assigned_dept = agent_mapping.get(pred_category, "Ümumi Şöbə")
+                            
+                            if ai_reply != "İNSAN":
+                                new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Gemini AI 🤖", "Status": "Həll edildi"}])
+                                new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
+                                st.success(f"⚡ Gemini AI probleminizi saniyələr içində təhlil etdi! (Kateqoriya: {pred_category})")
+                                st.info(f"🤖 **Həll Yolu:** {ai_reply}")
+                            else:
+                                new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq"}])
+                                new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
+                                st.success(f"✅ Sorğu qeydə alındı. Təyin edilən şöbə: {assigned_dept} ({pred_category})")
 
             with col_stat:
                 my_count = len(tickets_df[tickets_df['Göndərən'] == st.session_state.username])
