@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - Tünd Qırmızı Dizayn, Form Təsdiqi və Çoxdilli Sistem
+# Məqsəd: ASOIU IT Helpdesk AI - Tünd Qırmızı Dizayn, Çoxdilli Sistem və Auto-Bərpa (ParserError Fix)
 
 import streamlit as st
 import pandas as pd
@@ -29,10 +29,8 @@ st.markdown("""
         background-attachment: fixed;
         background-size: cover;
     }
-    /* Əsas mətnlər çox tünd, zərif qırmızı */
     h1, h2, h3, p, label, .stMarkdown { color: #5c0000 !important; }
     
-    /* Düymələr Tünd Qırmızı (DarkRed) */
     .stButton>button, .stFormSubmitButton>button { 
         background-color: #8b0000; 
         color: #ffffff; 
@@ -44,13 +42,11 @@ st.markdown("""
         transition: 0.3s; 
         width: 100%;
     }
-    /* Üzərinə gələndə daha da tündləşir */
     .stButton>button:hover, .stFormSubmitButton>button:hover { 
         background-color: #4a0000; 
         color: white; 
     }
     
-    /* Inputlar və çıxıntıların yığışdırılması */
     .stTextArea textarea { resize: none !important; border: 2px solid #b30000; border-radius: 15px; background-color: #fffafb; color: #5c0000; }
     .stTextInput input, .stSelectbox select { border: 2px solid #b30000; border-radius: 15px; background-color: #fffafb; color: #5c0000; }
     div[data-testid="stAlert"] { background-color: #fff0f0; border-left: 5px solid #8b0000; border-radius: 12px; color: #5c0000; }
@@ -68,7 +64,6 @@ LANG = {
 }
 
 st.sidebar.title("🌍 Dil / Language")
-# Yazı qutusu əvəzinə təmiz üfüqi radio düymələri
 sel_lang = st.sidebar.radio("", ["AZE", "ENG", "RUS", "TR"], horizontal=True, label_visibility="collapsed")
 t = LANG[sel_lang]
 
@@ -103,18 +98,30 @@ model = initialize_system()
 USERS_FILE = "data/users_db.csv"
 TICKETS_FILE = "data/live_tickets.csv"
 
-if not os.path.exists(USERS_FILE):
-    pd.DataFrame([
-        {"username": "kamran", "password": "admin", "role": "super_admin", "name": "Kamran Muradov", "dept": "Bütün_Sistem"},
-        {"username": "orxan", "password": "123", "role": "admin", "name": "Orxan Əliyev", "dept": "Avadanlıq"},
-        {"username": "cavid", "password": "123", "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"}
-    ]).to_csv(USERS_FILE, index=False)
+# BAZALARIN ZƏDƏLƏNMƏSİNƏ QARŞI QORUMA MƏNTİQİ (HƏLL BURADADIR)
+def ensure_db_exists():
+    # İstifadəçi bazası
+    try:
+        pd.read_csv(USERS_FILE)
+    except Exception:
+        pd.DataFrame([
+            {"username": "kamran", "password": "admin", "role": "super_admin", "name": "Kamran Muradov", "dept": "Bütün_Sistem"},
+            {"username": "orxan", "password": "123", "role": "admin", "name": "Orxan Əliyev", "dept": "Avadanlıq"},
+            {"username": "cavid", "password": "123", "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"}
+        ]).to_csv(USERS_FILE, index=False)
 
-if not os.path.exists(TICKETS_FILE):
-    pd.DataFrame(columns=["Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Məsul_Şəxs", "Status"]).to_csv(TICKETS_FILE, index=False)
+    # Biletlər (Sorğu) bazası - Köhnə formatı avtomatik silib yeniləyir
+    try:
+        df = pd.read_csv(TICKETS_FILE)
+        if "Status" not in df.columns:
+            raise ValueError("Köhnə format tapıldı.")
+    except Exception:
+        pd.DataFrame(columns=["Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Məsul_Şəxs", "Status"]).to_csv(TICKETS_FILE, index=False)
+
+ensure_db_exists()
 
 # ==========================================
-# 4. GİRİŞ VƏ QEYDİYYAT (ENTER TƏSDİQİ İLƏ)
+# 4. GİRİŞ VƏ QEYDİYYAT
 # ==========================================
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'show_forgot_pass' not in st.session_state: st.session_state.show_forgot_pass = False
@@ -127,7 +134,6 @@ if not st.session_state.logged_in:
             tab_login, tab_signup = st.tabs([f"🔐 {t['login_tab']}", f"📝 {t['signup_tab']}"])
             
             with tab_login:
-                # FORM: Enter basanda təsdiqlənir
                 with st.form("login_form"):
                     login_user = st.text_input(t['user'])
                     login_pass = st.text_input(t['pass'], type="password")
@@ -142,13 +148,11 @@ if not st.session_state.logged_in:
                             st.rerun()
                         else: st.error("❌ Xəta / Error")
                 
-                # Formdan kənarda unuttum düyməsi
                 if st.button(f"❓ {t['forgot']}"):
                     st.session_state.show_forgot_pass = True
                     st.rerun()
                     
             with tab_signup:
-                # FORM: Enter basanda təsdiqlənir
                 with st.form("signup_form"):
                     new_name = st.text_input(t['name'])
                     new_user = st.text_input(f"{t['user']} (Yeni):")
@@ -159,7 +163,6 @@ if not st.session_state.logged_in:
                         pd.DataFrame([{"username": new_user, "password": new_pass, "role": "user", "name": new_name, "dept": "Yoxdur"}]).to_csv(USERS_FILE, mode='a', header=False, index=False)
                         st.success("✅ OK")
         else:
-            # Şifrə yeniləmə formu
             with st.form("reset_pass_form"):
                 st.subheader("🔄 Şifrənin Yenilənməsi")
                 reset_user = st.text_input(t['user'])
@@ -193,8 +196,8 @@ else:
             st.rerun()
     st.markdown("---")
 
+    # Burada artıq xəta ola bilməz, yuxarıdakı funksiya qoruyur
     tickets_df = pd.read_csv(TICKETS_FILE)
-    if 'Status' not in tickets_df.columns: tickets_df['Status'] = "Açıq"
 
     # --- USER PANELİ ---
     if st.session_state.role == "user":
@@ -203,7 +206,6 @@ else:
         with tab_new:
             col_main, col_stat = st.columns([3, 1])
             with col_main:
-                # FORM: Enter (Ctrl+Enter) təsdiqi və göndərdikdən sonra avtomatik təmizlənmə
                 with st.form("ticket_form", clear_on_submit=True):
                     user_input = st.text_area(t['desc'], height=120)
                     submit_ticket = st.form_submit_button(t['send'])
