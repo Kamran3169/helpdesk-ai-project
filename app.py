@@ -10,14 +10,56 @@ from deep_translator import GoogleTranslator
 
 st.set_page_config(page_title="ASOIU IT Helpdesk AI", page_icon="⚙️", layout="centered")
 
+# CSS ilə Qırmızı Rəng, Dalğalı Fon və Yumşaq Künclərin Tətbiqi
 st.markdown("""
 <style>
-    .stApp { background-color: #ffffff; }
-    h1, h2, h3, p, label, .stMarkdown { color: #003366 !important; }
-    .stButton>button { background-color: #00509e; color: #ffffff; border-radius: 8px; border: none; padding: 10px 24px; font-weight: bold; }
-    .stButton>button:hover { background-color: #002244; color: white; }
-    .stTextArea textarea { border: 2px solid #00509e; background-color: #f4f8fc; color: #003366; }
-    div[data-testid="stAlert"] { background-color: #e6f2ff; border-left: 5px solid #00509e; color: #003366; }
+    /* 1. Arxa fona zərif qırmızı dalğa naxışı (SVG formatında) */
+    .stApp {
+        background-color: #ffffff;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffecec' fill-opacity='1' d='M0,224L48,213.3C96,203,192,181,288,186.7C384,192,480,224,576,218.7C672,213,768,171,864,149.3C960,128,1056,128,1152,144C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+        background-attachment: fixed;
+        background-size: cover;
+    }
+    
+    /* 2. Mətn rəngləri - Oxunaqlı olması üçün tünd qırmızı */
+    h1, h2, h3, p, label, .stMarkdown {
+        color: #800000 !important;
+    }
+    
+    /* 3. Düymələrin dizaynı - Qırmızı rəng və tam oval (yumşaq) künclər */
+    .stButton>button {
+        background-color: #cc0000;
+        color: #ffffff;
+        border-radius: 25px; /* Sərt küncləri yığışdıran əsas parametr */
+        border: none;
+        padding: 12px 28px;
+        font-weight: bold;
+        transition: 0.3s;
+        box-shadow: 0px 4px 6px rgba(204, 0, 0, 0.2);
+    }
+    
+    /* Düymənin üzərinə gəldikdə rəngin tündləşməsi */
+    .stButton>button:hover {
+        background-color: #990000;
+        color: white;
+        box-shadow: 0px 6px 8px rgba(204, 0, 0, 0.4);
+    }
+    
+    /* 4. Mətn daxiletmə qutusu (Text Area) - Oval künclər */
+    .stTextArea textarea {
+        border: 2px solid #cc0000;
+        border-radius: 15px; /* Sərt künclər yığışdırıldı */
+        background-color: #fff9f9;
+        color: #800000;
+    }
+    
+    /* 5. Uğurlu nəticə və xəbərdarlıq qutularının künclərinin yumşaldılması */
+    div[data-testid="stAlert"] {
+        background-color: #ffe6e6;
+        border-left: 5px solid #cc0000;
+        border-radius: 12px; /* Sərt künclər yığışdırıldı */
+        color: #800000;
+    }
 </style>
 """, unsafe_allow_html=True)
 
