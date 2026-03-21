@@ -18,7 +18,9 @@ def load_model():
 try:
     model = load_model()
 except Exception as e:
-    st.error(f"Xəta: Model faylı tapılmadı! Axtarılan yol: {model_path}")
+    st.error(f"Əsl Xəta: {e}")
+    st.warning(f"Axtarılan yol: {model_path}")
+    st.info(f"Serverin bu qovluqda gördüyü fayllar: {os.listdir(current_dir)}")
     st.stop()
 
 # ... (Kodun qalan hissəsi olduğu kimi qalır) ...
