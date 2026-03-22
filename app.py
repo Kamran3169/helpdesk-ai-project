@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - 30,000 Sətirlik Baza və 500 Qərar Ağacı (0 Xəta Hədəfi)
+# Məqsəd: ASOIU IT Helpdesk AI - 100,000+ Sətirlik Baza və 1000 Qərar Ağacı (Ultra Big Data)
 
 import streamlit as st
 import pandas as pd
@@ -66,17 +66,17 @@ def normalize_text(text):
     return text.strip()
 
 # ==========================================
-# 3. 30,000 SƏTİRLİK ULTRA BAZA VƏ 500 AĞACLIQ MODEL
+# 3. 100,000 SƏTİRLİK ULTRA BAZA VƏ 1000 AĞACLIQ MODEL
 # ==========================================
 @st.cache_resource
 def initialize_system():
     os.makedirs('data', exist_ok=True)
     rebuild_needed = False
     
-    # Baza ölçüsünü yoxlayır, 30,000-dən kiçikdirsə NƏHƏNG bazanı qurur
+    # Baza ölçüsünü yoxlayır, 99,000-dən kiçikdirsə ULTRA NƏHƏNG bazanı qurur
     if os.path.exists('data/tickets.csv'):
         df_check = pd.read_csv('data/tickets.csv')
-        if len(df_check) < 29000: rebuild_needed = True
+        if len(df_check) < 99000: rebuild_needed = True
     else: rebuild_needed = True
 
     if rebuild_needed:
@@ -118,8 +118,8 @@ def initialize_system():
         ]
         
         data = []
-        # 5000 DÖVR x 6 KATEQORİYA = 30,000 SƏTİRLİK NƏHƏNG BAZA YARADILIR
-        for _ in range(5000): 
+        # 17000 DÖVR x 6 KATEQORİYA = 102,000 SƏTİRLİK ULTRA NƏHƏNG BAZA YARADILIR
+        for _ in range(17000): 
             data.append({"ticket_text": random.choice(network_issues), "category": "Şəbəkə"})
             data.append({"ticket_text": random.choice(hardware_issues), "category": "Avadanlıq"})
             data.append({"ticket_text": random.choice(account_issues), "category": "Hesab_Problemi"})
@@ -133,9 +133,10 @@ def initialize_system():
     def train_new_model():
         df = pd.read_csv('data/tickets.csv')
         pipeline = Pipeline([
-            ('tfidf', TfidfVectorizer(ngram_range=(1, 3))), 
-            # 500 AĞAC (n_estimators=500) - Sıfır xəta üçün maksimum qərar vermə gücü
-            ('clf', RandomForestClassifier(n_estimators=500, random_state=42, n_jobs=-1))
+            # max_features=20000 serverin 100 min sətri emal edərkən partlamamasının qarşısını alır
+            ('tfidf', TfidfVectorizer(ngram_range=(1, 3), max_features=20000)), 
+            # 1000 AĞAC (n_estimators=1000) - Sıfır xəta üçün mükəmməl qərar vermə gücü
+            ('clf', RandomForestClassifier(n_estimators=1000, random_state=42, n_jobs=-1))
         ])
         pipeline.fit(df['ticket_text'], df['category'])
         return pipeline
@@ -151,7 +152,7 @@ def initialize_system():
             joblib.dump(model, 'helpdesk_classifier_model.pkl')
             return model
 
-with st.spinner("30,000 sətirlik Nəhəng Baza və 500 Ağaclıq Model yaradılır... (İlk açılışda ~10-15 saniyə çəkəcək)"):
+with st.spinner("102,000 sətirlik Ultra-Baza və 1000 Ağaclıq Model yaradılır... (İlk açılışda ~1-2 dəqiqə çəkə bilər)"):
     model = initialize_system()
 
 USERS_FILE = "data/users_db.csv"
@@ -278,7 +279,7 @@ else:
                     submit_ticket = st.form_submit_button(t['send'], type="primary")
                     
                     if submit_ticket and user_input.strip():
-                        # 30,000 SƏTİRLİK, 500 AĞACLI MODEL TƏXMİN EDİR
+                        # 100,000 SƏTİRLİK, 1000 AĞACLI MODEL TƏXMİN EDİR
                         clean_input = normalize_text(user_input)
                         pred_category = model.predict([clean_input])[0]
                         
@@ -340,7 +341,7 @@ else:
                     submit_accept = st.form_submit_button(t['accept_ticket'], type="primary")
                     if submit_accept:
                         tickets_df.loc[accept_id, "Status"] = "İcrada"
-                        tickets_df.loc[accept_id, "Məsul_Ş_xs"] = st.session_state.username
+                        tickets_df.loc[accept_id, "Məsul_Şəxs"] = st.session_state.username
                         tickets_df.to_csv(TICKETS_FILE, index=False)
                         st.success("✅ Sorğu İcraya Götürüldü / Accepted!")
                         st.rerun()
