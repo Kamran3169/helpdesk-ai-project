@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU Command Center - NASA Style Enterprise Helpdesk AI (Qüsursuz Versiya)
+# Məqsəd: ASOIU Command Center - Avto-Bərpaedici Baza və Təhlükəsiz Giriş
 
 import streamlit as st
 import pandas as pd
@@ -25,17 +25,12 @@ except ImportError:
 st.set_page_config(page_title="ASOIU Command Center", page_icon="🚀", layout="wide")
 st.markdown("""
 <style>
-    /* Kosmik Tünd Arxa Fon */
     .stApp {
         background-color: #050810;
         color: #E2E8F0;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    
-    /* Yazıların rəngləri */
     h1, h2, h3, p, label, .stMarkdown { color: #FFFFFF !important; }
-    
-    /* NASA Qırmızısı və Texnoloji Düymələr */
     button[kind="primary"], button[kind="secondary"], .stButton>button, .stFormSubmitButton>button, div[data-testid="stDownloadButton"]>button { 
         background: linear-gradient(135deg, #FC3D21, #D82810) !important; 
         color: #ffffff !important; 
@@ -54,22 +49,12 @@ st.markdown("""
         box-shadow: 0px 0px 20px rgba(252, 61, 33, 0.6) !important; 
         color: white !important; 
     }
-    
-    /* Tünd İnputlar (Terminal tərzi) */
     .stTextArea textarea { resize: none !important; border: 1px solid #1E3A8A !important; border-radius: 4px !important; background-color: #0B1221 !important; color: #00D2FF !important; font-family: monospace !important; }
     .stTextInput input, .stSelectbox select { border: 1px solid #1E3A8A !important; border-radius: 4px !important; background-color: #0B1221 !important; color: #00D2FF !important; }
-    
-    /* Məlumat Qutuları */
     div[data-testid="stAlert"] { background-color: rgba(30, 58, 138, 0.2) !important; border-left: 4px solid #00D2FF !important; border-radius: 4px !important; color: #E2E8F0 !important; }
-    
-    /* Sekmələr (Tabs) */
     button[data-baseweb="tab"] { font-weight: bold; color: #A0AEC0 !important; }
     button[data-baseweb="tab"][aria-selected="true"] { color: #00D2FF !important; border-bottom: 2px solid #00D2FF !important; }
-    
-    /* Metriklər (Yuxarıdakı böyük rəqəmlər) */
     div[data-testid="stMetricValue"] { color: #00D2FF !important; text-shadow: 0px 0px 10px rgba(0, 210, 255, 0.3); }
-    
-    /* Yan Panel */
     [data-testid="stSidebar"] { background-color: #080D1A !important; border-right: 1px solid #1A202C !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -81,7 +66,7 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 # ==========================================
-# 2. DİL VƏ YAN PANEL (SYSTEM HEALTH)
+# 2. DİL VƏ YAN PANEL
 # ==========================================
 LANG = {
     "AZE": {"welcome": "ASOIU COMMAND CENTER", "login_tab": "SİSTEMƏ GİRİŞ", "signup_tab": "YENİ ŞƏXSƏAL", "user": "İdentifikator (ad_soyad)", "pass": "Təhlükəsizlik Şifrəsi", "login_btn": "Təsdiqlə və Daxil Ol", "forgot": "Şifrə Bərpası", "name": "Tam Ad", "signup_btn": "Sistemə Əlavə Et", "logout": "Sessiyanı Bitir", "new_ticket": "YENİ İNSİDENT", "desc": "İnsidentin detallı təsviri (Terminal):", "send": "Göndər", "stats": "GÖSTƏRİCİLƏR", "my_tickets": "Mənim İnsidentlərim", "exam": "AGENT İMTAHANI", "admin_panel": "MÜTƏXƏSSİS TERMİNALI", "solved_by_me": "Bağlanmış İnsidentlər", "open_tickets": "AÇIQ İNSİDENTLƏR (GÖZLƏMƏDƏ)", "mark_solved": "İNSİDENTİ BAĞLA", "download_csv": "☁️ SİSTEM BAZASINI ÇIXAR (CSV)", "accept_ticket": "İCRAYA QƏBUL ET", "my_active": "AKTİV İCRALARIM"}
@@ -182,17 +167,28 @@ def initialize_system():
 with st.spinner("🚀 CORE ENGINE INITIALIZING (100K+ RECORDS)..."):
     model = initialize_system()
 
+# TƏHLÜKƏSİZLİK VƏ AVTO-BƏRPA FUNKSİYASI
 def ensure_db_exists():
-    try: pd.read_csv(USERS_FILE)
+    os.makedirs('data', exist_ok=True)
+    
+    # İstifadəçi bazasını yoxlayırıq
+    try:
+        u_df = pd.read_csv(USERS_FILE)
+        # Əgər şifrə uzunluğu 64 simvoldan qısadırsa, deməli köhnə (şifrələnməmiş) parollardır!
+        if len(str(u_df['password'].iloc[0])) < 64:
+            raise ValueError("Köhnə şifrələmə aşkarklandı, yenilənməlidir.")
     except Exception:
+        # Xəta varsa (və ya köhnədirsə) təzədən şifrələnmiş formatda yaradırıq
         pd.DataFrame([
             {"username": "kamran_muradov", "password": hash_password("admin"), "role": "super_admin", "name": "Kamran Muradov", "dept": "Bütün_Sistem"},
             {"username": "orxan_eliyev", "password": hash_password("123"), "role": "admin", "name": "Orxan Əliyev", "dept": "Avadanlıq"},
             {"username": "cavid_memmedov", "password": hash_password("123"), "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"}
         ]).to_csv(USERS_FILE, index=False)
+        
+    # İnsident bazasını yoxlayırıq
     try:
-        df = pd.read_csv(TICKETS_FILE)
-        if "Prioritet" not in df.columns: raise ValueError("Format error")
+        t_df = pd.read_csv(TICKETS_FILE)
+        if "Prioritet" not in t_df.columns: raise ValueError("Format error")
     except Exception:
         pd.DataFrame(columns=["Ticket_ID", "Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Prioritet", "Məsul_Şəxs", "Status"]).to_csv(TICKETS_FILE, index=False)
 
@@ -275,7 +271,7 @@ if not st.session_state.logged_in:
                     st.rerun()
 
 # ==========================================
-# 6. ƏSAS SİSTEM VƏ DASHBOARD
+# 5. ƏSAS SİSTEM VƏ DASHBOARD
 # ==========================================
 else:
     if st.session_state.role in ["admin", "super_admin"] and st_autorefresh:
@@ -451,5 +447,5 @@ else:
         with tab_users:
             st.write("### SYSTEM IDENTITIES (HESABLAR BAZASI)")
             users_db = pd.read_csv(USERS_FILE)
-            safe_users_db = users_db.drop(columns=['password'])
+            safe_users_db = users_db.drop(columns=['password']) 
             st.dataframe(safe_users_db, use_container_width=True, hide_index=True)
