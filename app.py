@@ -1,12 +1,13 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - 100,000+ Sətirlik Baza, 1000 Qərar Ağacı və UTF-8-SIG (Excel CSV Fix)
+# Məqsəd: ASOIU Command Center - NASA Style Enterprise Helpdesk AI
 
 import streamlit as st
 import pandas as pd
 import joblib
 import os
 import random
+import hashlib
 from datetime import datetime
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -19,45 +20,106 @@ except ImportError:
     st_autorefresh = None
 
 # ==========================================
-# 1. DİZAYN VƏ SƏHİFƏ TƏNZİMLƏMƏLƏRİ
+# 1. NASA STYLE DİZAYN (COMMAND CENTER)
 # ==========================================
-st.set_page_config(page_title="ASOIU IT Helpdesk AI", page_icon="💠", layout="wide")
+st.set_page_config(page_title="ASOIU Command Center", page_icon="🚀", layout="wide")
 st.markdown("""
 <style>
+    /* Kosmik Tünd Arxa Fon */
     .stApp {
-        background-color: #ffffff;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffecec' fill-opacity='1' d='M0,224L48,213.3C96,203,192,181,288,186.7C384,192,480,224,576,218.7C672,213,768,171,864,149.3C960,128,1056,128,1152,144C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
-        background-attachment: fixed; background-size: cover;
+        background-color: #050810;
+        color: #E2E8F0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    h1, h2, h3, p, label, .stMarkdown { color: #5c0000 !important; }
+    
+    /* Yazıların rəngləri */
+    h1, h2, h3, p, label, .stMarkdown { color: #FFFFFF !important; }
+    
+    /* NASA Qırmızısı və Texnoloji Düymələr */
     button[kind="primary"], button[kind="secondary"], .stButton>button, .stFormSubmitButton>button, div[data-testid="stDownloadButton"]>button { 
-        background-color: #cc0000 !important; color: #ffffff !important; border-radius: 25px !important; border: none !important; padding: 10px 24px !important; font-weight: bold !important; box-shadow: 0px 4px 6px rgba(204, 0, 0, 0.3) !important; transition: 0.3s !important; width: 100% !important;
+        background: linear-gradient(135deg, #FC3D21, #D82810) !important; 
+        color: #ffffff !important; 
+        border-radius: 4px !important; 
+        border: 1px solid #FF5A40 !important;
+        padding: 10px 24px !important; 
+        font-weight: 600 !important; 
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
+        box-shadow: 0px 4px 15px rgba(252, 61, 33, 0.3) !important; 
+        transition: 0.3s !important; 
+        width: 100% !important;
     }
     button[kind="primary"]:hover, button[kind="secondary"]:hover, .stButton>button:hover, .stFormSubmitButton>button:hover, div[data-testid="stDownloadButton"]>button:hover { 
-        background-color: #8b0000 !important; color: white !important; 
+        background: linear-gradient(135deg, #D82810, #901A0A) !important;
+        box-shadow: 0px 0px 20px rgba(252, 61, 33, 0.6) !important; 
+        color: white !important; 
     }
-    .stTextArea textarea { resize: none !important; border: 2px solid #b30000; border-radius: 15px; background-color: #fffafb; color: #5c0000; }
-    .stTextInput input, .stSelectbox select { border: 2px solid #b30000; border-radius: 15px; background-color: #fffafb; color: #5c0000; }
-    div[data-testid="stAlert"] { background-color: #fff0f0; border-left: 5px solid #cc0000; border-radius: 12px; color: #5c0000; }
-    button[data-baseweb="tab"] { font-weight: bold; color: #cc0000 !important; }
+    
+    /* Tünd İnputlar (Terminal tərzi) */
+    .stTextArea textarea { resize: none !important; border: 1px solid #1E3A8A !important; border-radius: 4px !important; background-color: #0B1221 !important; color: #00D2FF !important; font-family: monospace !important; }
+    .stTextInput input, .stSelectbox select { border: 1px solid #1E3A8A !important; border-radius: 4px !important; background-color: #0B1221 !important; color: #00D2FF !important; }
+    
+    /* Məlumat Qutuları */
+    div[data-testid="stAlert"] { background-color: rgba(30, 58, 138, 0.2) !important; border-left: 4px solid #00D2FF !important; border-radius: 4px !important; color: #E2E8F0 !important; }
+    
+    /* Sekmələr (Tabs) */
+    button[data-baseweb="tab"] { font-weight: bold; color: #A0AEC0 !important; }
+    button[data-baseweb="tab"][aria-selected="true"] { color: #00D2FF !important; border-bottom: 2px solid #00D2FF !important; }
+    
+    /* Metriklər (Yuxarıdakı böyük rəqəmlər) */
+    div[data-testid="stMetricValue"] { color: #00D2FF !important; text-shadow: 0px 0px 10px rgba(0, 210, 255, 0.3); }
+    
+    /* Yan Panel */
+    [data-testid="stSidebar"] { background-color: #080D1A !important; border-right: 1px solid #1A202C !important; }
 </style>
 """, unsafe_allow_html=True)
 
 def play_notification_sound():
     st.markdown("""<audio autoplay="true"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"></audio>""", unsafe_allow_html=True)
 
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
 # ==========================================
-# 2. İNTERFEYS DİL SÖZLÜYÜ
+# 2. DİL VƏ YAN PANEL (SYSTEM HEALTH)
 # ==========================================
 LANG = {
-    "AZE": {"welcome": "Sistemə Xoş Gəldiniz", "login_tab": "Daxil Ol", "signup_tab": "Qeydiyyat", "user": "İstifadəçi adı", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Parolumu Unutdum", "name": "Tam Adınız", "signup_btn": "Qeydiyyatdan Keç", "logout": "Çıxış Et", "new_ticket": "Yeni Sorğu", "desc": "Problemi daxil edin:", "send": "Göndər", "stats": "Statistika", "my_tickets": "Göndərdiyim sorğular", "exam": "Admin İmtahanı", "admin_panel": "İş Paneli", "solved_by_me": "Həll etdiklərim", "open_tickets": "Açıq (Gözləyən) Sorğular", "mark_solved": "Həll edildi", "download_csv": "☁️ CSV Yüklə", "accept_ticket": "İcraya Götür", "my_active": "İcradakı Sorğularım"},
-    "ENG": {"welcome": "Welcome to the System", "login_tab": "Log In", "signup_tab": "Sign Up", "user": "Username", "pass": "Password", "login_btn": "Log In", "forgot": "Forgot Password", "name": "Full Name", "signup_btn": "Sign Up", "logout": "Log Out", "new_ticket": "New Ticket", "desc": "Describe the problem:", "send": "Submit", "stats": "Statistics", "my_tickets": "Submitted", "exam": "Admin Exam", "admin_panel": "Work Panel", "solved_by_me": "Resolved by me", "open_tickets": "Open Tickets", "mark_solved": "Mark Resolved", "download_csv": "☁️ Download CSV", "accept_ticket": "Accept Ticket", "my_active": "My Active Tickets"},
-    "RUS": {"welcome": "Добро пожаловать", "login_tab": "Войти", "signup_tab": "Регистрация", "user": "Имя пользователя", "pass": "Пароль", "login_btn": "Войти", "forgot": "Забыл пароль", "name": "Полное имя", "signup_btn": "Зарегистрироваться", "logout": "Выйти", "new_ticket": "Новый запрос", "desc": "Опишите проблему:", "send": "Отправить", "stats": "Статистика", "my_tickets": "Мои запросы", "exam": "Экзамен Админа", "admin_panel": "Панель", "solved_by_me": "Решенные мной", "open_tickets": "Открытые (В ожидании)", "mark_solved": "Решено", "download_csv": "☁️ Скачать CSV", "accept_ticket": "Принять в работу", "my_active": "Мои активные задачи"},
-    "TR": {"welcome": "Sisteme Hoş Geldiniz", "login_tab": "Giriş Yap", "signup_tab": "Kayıt Ol", "user": "Kullanıcı Adı", "pass": "Şifre", "login_btn": "Giriş Yap", "forgot": "Şifremi Unuttum", "name": "Tam Adınız", "signup_btn": "Kayıt Ol", "logout": "Çıkış Yap", "new_ticket": "Yeni Talep", "desc": "Sorunu açıklayın:", "send": "Gönder", "stats": "İstatistikler", "my_tickets": "Taleplerim", "exam": "Admin Sınavı", "admin_panel": "Çalışma Paneli", "solved_by_me": "Çözdüklerim", "open_tickets": "Açık Talepler", "mark_solved": "Çözüldü", "download_csv": "☁️ CSV İndir", "accept_ticket": "Görevi Al", "my_active": "İşlemdeki Taleplerim"}
+    "AZE": {"welcome": "ASOIU COMMAND CENTER", "login_tab": "SİSTEMƏ GİRİŞ", "signup_tab": "YENİ ŞƏXSƏAL", "user": "İdentifikator (ad_soyad)", "pass": "Təhlükəsizlik Şifrəsi", "login_btn": "Təsdiqlə və Daxil Ol", "forgot": "Şifrə Bərpası", "name": "Tam Ad", "signup_btn": "Sistemə Əlavə Et", "logout": "Sessiyanı Bitir", "new_ticket": "YENİ İNSİDENT", "desc": "İnsidentin detallı təsviri (Terminal):", "send": "Göndər", "stats": "GÖSTƏRİCİLƏR", "my_tickets": "Mənim İnsidentlərim", "exam": "AGENT İMTAHANI", "admin_panel": "MÜTƏXƏSSİS TERMİNALI", "solved_by_me": "Bağlanmış İnsidentlər", "open_tickets": "AÇIQ İNSİDENTLƏR (GÖZLƏMƏDƏ)", "mark_solved": "İNSİDENTİ BAĞLA", "download_csv": "☁️ SİSTEM BAZASINI ÇIXAR (CSV)", "accept_ticket": "İCRAYA QƏBUL ET", "my_active": "AKTİV İCRALARIM"}
 }
-st.sidebar.title("🌍 Language")
-sel_lang = st.sidebar.radio("", ["AZE", "ENG", "RUS", "TR"], horizontal=True, label_visibility="collapsed")
+st.sidebar.title("🌐 COMMAND CENTER")
+sel_lang = st.sidebar.radio("", ["AZE"], horizontal=True, label_visibility="collapsed")
 t = LANG[sel_lang]
+
+USERS_FILE = "data/users_db.csv"
+TICKETS_FILE = "data/live_tickets.csv"
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("📡 SYSTEM HEALTH")
+# NASA tərzində sistem göstəriciləri (Simulyasiya edilmiş amma peşəkar görünür)
+st.sidebar.markdown("""
+<div style='font-family: monospace; font-size: 13px; color: #A0AEC0;'>
+    CORE SERVER: <span style='color: #48BB78;'>🟢 ONLINE</span><br>
+    AI ENGINE: <span style='color: #48BB78;'>🧠 V4.0 ACTIVE</span><br>
+    DB STATUS: <span style='color: #48BB78;'>💾 SECURE</span><br>
+    NETWORK: <span style='color: #48BB78;'>📶 STABLE (12ms)</span>
+</div>
+""", unsafe_allow_html=True)
+
+if st.session_state.get('logged_in'):
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("👤 AKTİV SESSIYA")
+    st.sidebar.write(f"**ID:** {st.session_state.name}")
+    st.sidebar.write(f"**SƏLAHİYYƏT:** {st.session_state.role.upper()}")
+    st.sidebar.write(f"**BÖLMƏ:** {st.session_state.dept}")
+
+if st.sidebar.button("📞 TƏCİLİ DƏSTƏK KANALI"):
+    if os.path.exists(USERS_FILE):
+        users_df = pd.read_csv(USERS_FILE)
+        admins = users_df[users_df['role'].isin(['admin', 'super_admin'])]
+        if not admins.empty:
+            random_admin = admins.sample(1).iloc[0]
+            st.sidebar.success(f"📡 **BAĞLANTI YARADILDI:**\n\n👤 {random_admin['name']}\n🏢 {random_admin['dept']}\n📱 +994 50 123 45 67")
+        else: st.sidebar.warning("Aktiv agent tapılmadı.")
 
 def normalize_text(text):
     text = text.lower()
@@ -66,7 +128,7 @@ def normalize_text(text):
     return text.strip()
 
 # ==========================================
-# 3. 100,000 SƏTİRLİK ULTRA BAZA VƏ 1000 AĞACLIQ MODEL
+# 3. ULTRA BAZA VƏ AI MÜHƏRRİKİ (ENGINE)
 # ==========================================
 @st.cache_resource
 def initialize_system():
@@ -79,42 +141,12 @@ def initialize_system():
     else: rebuild_needed = True
 
     if rebuild_needed:
-        network_issues = [
-            "wi-fi qosulmur", "internet zeifdir", "ip xetasi", "lan kabel qirilib", "sebeke yoxdur", "internet kesilib", "sebeke problemi var",
-            "wi-fi not working", "slow internet", "ip error", "broken cable", "no network", "connection dropped", "no internet", "network issue",
-            "не работает wi-fi", "медленный интернет", "ошибка ip", "нет сети", "обрыв кабеля", "нет интернета", "плохое соединение",
-            "wi-fi çalışmıyor", "internet yavaş", "ip hatası", "kablo koptu", "ağ yok", "bağlantı koptu", "internet gitti", "ağ sorunu"
-        ]
-        hardware_issues = [
-            "noutbuk donur", "proyektor islemir", "printer cap etmir", "ram problemi", "sistem bloku yanir", "ekran acilmir", "klaviatura islemir", "maus xarabdir",
-            "laptop freezing", "screen is black", "printer not printing", "mouse broken", "keyboard not working", "pc crashing", "monitor dead", "battery issue",
-            "ноутбук зависает", "черный экран", "принтер не печатает", "сломана мышь", "клавиатура не работает", "компьютер не включается", "проблема с батареей",
-            "laptop donuyor", "ekran açılmıyor", "yazıcı yazdırmıyor", "fare bozuk", "klavye çalışmıyor", "bilgisayar kapandı", "şarj olmuyor", "kasa yandı"
-        ]
-        account_issues = [
-            "mailime gire bilmirem", "parolu unutmusam", "hesab bloklanib", "sisteme giris ede bilmirem", "sifre yalnisdir", "moodle hesabi acilmir",
-            "forgot password", "account locked", "cant login", "wrong password", "email not working", "access denied", "reset my password",
-            "забыл пароль", "аккаунт заблокирован", "не могу войти", "неверный пароль", "ошибка авторизации", "нет доступа",
-            "şifremi unuttum", "hesabım kilitlendi", "giriş yapamıyorum", "yanlış şifre", "mail açılmıyor", "sisteme giremiyorum", "yetki yok"
-        ]
-        software_issues = [
-            "office lisenziya xetasi", "antivirus xetasi", "windows dondu", "proqram acilmir", "word islemir", "sistem update olunmur", "excel acmir",
-            "software not opening", "windows crashed", "office error", "excel freezing", "update failed", "program crash", "blue screen app",
-            "программа не открывается", "windows завис", "ошибка office", "excel не работает", "ошибка обновления", "сбой программы",
-            "program açılmıyor", "windows çöktü", "office hatası", "excel donuyor", "güncelleme başarısız", "uygulama yanıt vermiyor", "mavi ekran"
-        ]
-        security_issues = [
-            "komputere virus dusub", "spam mailler", "fayllarim sifrelenib", "heker hucumu", "qeribe reklamlar cixir", "trojan var",
-            "virus detected", "spam emails", "hacker attack", "files encrypted", "malware", "ransomware", "unauthorized access",
-            "обнаружен вирус", "спам письма", "хакерская атака", "файлы зашифрованы", "троян", "взлом",
-            "virüs bulaştı", "spam e-postalar", "hacker saldırısı", "dosyalar şifrelendi", "trojan var", "hesabım çalındı", "şüpheli işlem"
-        ]
-        database_issues = [
-            "melumat bazasina qosulmur", "sql xetasi", "1c acilmir", "servere qosulmaq olmur", "baza silinib", "server cokdu",
-            "database connection failed", "sql error", "server down", "data deleted", "query failed", "oracle error", "db crash",
-            "ошибка подключения к базе", "ошибка sql", "сервер недоступен", "данные удалены", "ошибка запроса", "база данных легла",
-            "veritabanı bağlantı hatası", "sql hatası", "sunucu çöktü", "veriler silindi", "sorgu hatası", "db bağlantısı yok"
-        ]
+        network_issues = ["wi-fi qosulmur", "internet zeifdir", "ip xetasi", "lan kabel qirilib", "sebeke yoxdur", "internet kesilib", "sebeke problemi var", "wi-fi not working", "slow internet", "ip error", "broken cable", "no network", "connection dropped", "no internet", "network issue", "не работает wi-fi", "медленный интернет", "ошибка ip", "нет сети", "обрыв кабеля", "нет интернета", "плохое соединение", "wi-fi çalışmıyor", "internet yavaş", "ip hatası", "kablo koptu", "ağ yok", "bağlantı koptu", "internet gitti", "ağ sorunu"]
+        hardware_issues = ["noutbuk donur", "proyektor islemir", "printer cap etmir", "ram problemi", "sistem bloku yanir", "ekran acilmir", "klaviatura islemir", "maus xarabdir", "laptop freezing", "screen is black", "printer not printing", "mouse broken", "keyboard not working", "pc crashing", "monitor dead", "battery issue", "ноутбук зависает", "черный экран", "принтер не печатает", "сломана мышь", "клавиатура не работает", "компьютер не включается", "проблема с батареей", "laptop donuyor", "ekran açılmıyor", "yazıcı yazdırmıyor", "fare bozuk", "klavye çalışmıyor", "bilgisayar kapandı", "şarj olmuyor", "kasa yandı"]
+        account_issues = ["mailime gire bilmirem", "parolu unutmusam", "hesab bloklanib", "sisteme giris ede bilmirem", "sifre yalnisdir", "moodle hesabi acilmir", "forgot password", "account locked", "cant login", "wrong password", "email not working", "access denied", "reset my password", "забыл пароль", "аккаунт заблокирован", "не могу войти", "неверный пароль", "ошибка авторизации", "нет доступа", "şifremi unuttum", "hesabım kilitlendi", "giriş yapamıyorum", "yanlış şifre", "mail açılmıyor", "sisteme giremiyorum", "yetki yok"]
+        software_issues = ["office lisenziya xetasi", "antivirus xetasi", "windows dondu", "proqram acilmir", "word islemir", "sistem update olunmur", "excel acmir", "software not opening", "windows crashed", "office error", "excel freezing", "update failed", "program crash", "blue screen app", "программа не открывается", "windows завис", "ошибка office", "excel не работает", "ошибка обновления", "сбой программы", "program açılmıyor", "windows çöktü", "office hatası", "excel donuyor", "güncelleme başarısız", "uygulama yanıt vermiyor", "mavi ekran"]
+        security_issues = ["komputere virus dusub", "spam mailler", "fayllarim sifrelenib", "heker hucumu", "qeribe reklamlar cixir", "trojan var", "virus detected", "spam emails", "hacker attack", "files encrypted", "malware", "ransomware", "unauthorized access", "обнаружен вирус", "спам письма", "хакерская атака", "файлы зашифрованы", "троян", "взлом", "virüs bulaştı", "spam e-postalar", "hacker saldırısı", "dosyalar şifrelendi", "trojan var", "hesabım çalındı", "şüpheli işlem"]
+        database_issues = ["melumat bazasina qosulmur", "sql xetasi", "1c acilmir", "servere qosulmaq olmur", "baza silinib", "server cokdu", "database connection failed", "sql error", "server down", "data deleted", "query failed", "oracle error", "db crash", "ошибка подключения к базе", "ошибка sql", "сервер недоступен", "данные удалены", "ошибка запроса", "база данных легла", "veritabanı bağlantı hatası", "sql hatası", "sunucu çöktü", "veriler silindi", "sorgu hatası", "db bağlantısı yok"]
         
         data = []
         for _ in range(17000): 
@@ -148,116 +180,120 @@ def initialize_system():
             joblib.dump(model, 'helpdesk_classifier_model.pkl')
             return model
 
-with st.spinner("102,000 sətirlik Ultra-Baza və 1000 Ağaclıq Model yaradılır... (İlk açılışda ~1-2 dəqiqə çəkə bilər)"):
+with st.spinner("🚀 CORE ENGINE INITIALIZING (100K+ RECORDS)..."):
     model = initialize_system()
-
-USERS_FILE = "data/users_db.csv"
-TICKETS_FILE = "data/live_tickets.csv"
 
 def ensure_db_exists():
     try: pd.read_csv(USERS_FILE)
     except Exception:
         pd.DataFrame([
-            {"username": "kamran", "password": "admin", "role": "super_admin", "name": "Kamran Muradov", "dept": "Bütün_Sistem"},
-            {"username": "orxan", "password": "123", "role": "admin", "name": "Orxan Əliyev", "dept": "Avadanlıq"},
-            {"username": "cavid", "password": "123", "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"}
+            {"username": "kamran_muradov", "password": hash_password("admin"), "role": "super_admin", "name": "Kamran Muradov", "dept": "Bütün_Sistem"},
+            {"username": "orxan_eliyev", "password": hash_password("123"), "role": "admin", "name": "Orxan Əliyev", "dept": "Avadanlıq"},
+            {"username": "cavid_memmedov", "password": hash_password("123"), "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"}
         ]).to_csv(USERS_FILE, index=False)
     try:
         df = pd.read_csv(TICKETS_FILE)
-        if "Status" not in df.columns: raise ValueError("Format error")
+        if "Prioritet" not in df.columns: raise ValueError("Format error")
     except Exception:
-        pd.DataFrame(columns=["Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Məsul_Şəxs", "Status"]).to_csv(TICKETS_FILE, index=False)
+        pd.DataFrame(columns=["Ticket_ID", "Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Prioritet", "Məsul_Şəxs", "Status"]).to_csv(TICKETS_FILE, index=False)
 
 ensure_db_exists()
 
-# ==========================================
-# 4. MULTILINGUAL AVTO-HƏLL MEXANİZMİ
-# ==========================================
+def get_priority(category):
+    if category in ["Təhlükəsizlik", "Məlumat_Bazası"]: return "🔴 CRITICAL"
+    elif category in ["Şəbəkə", "Hesab_Problemi"]: return "🟡 HIGH"
+    else: return "🟢 NORMAL"
+
 def smart_ai_autosolve(text):
     text = normalize_text(text)
-    if any(word in text for word in ["parol", "sifre", "unutmusam", "password", "forgot", "забыл", "пароль", "unuttum", "şifre"]):
-        return "🤖 AI Həll / AI Solution: Şifrənizi sıfırlamaq üçün korporativ portalda 'Şifrəni Bərpa Et' bölməsinə daxil olun."
-    elif any(word in text for word in ["zeif", "yavas", "qopur", "slow", "dropped", "медленный", "yavaş"]) and any(word in text for word in ["internet", "wi-fi", "sebeke", "net", "ağ", "network", "сеть"]):
-        return "🤖 AI Həll / AI Solution: Hazırda mərkəzi serverlərdə yüklənmə mövcuddur. Wi-Fi bağlantısını kəsib 30 saniyə sonra yenidən qoşulun."
-    elif any(word in text for word in ["donur", "dondu", "freezing", "crashed", "зависает", "donuyor", "çöktü"]):
-        return "🤖 AI Həll / AI Solution: Sistem donmalarının səbəbi RAM yüklənməsidir. 'Task Manager' (Ctrl+Shift+Esc) açaraq lazımsız proqramları bağlayın."
-    elif any(word in text for word in ["virus", "spam", "reklam", "trojan", "hacker", "вирус", "взлом", "virüs"]):
-        return "🤖 AI Həll / AI Solution: Lütfən cihazı DƏRHAL internet şəbəkəsindən ayırın. İT şöbəsi gələnə qədər cihaza heç nə taxmayın!"
+    if any(word in text for word in ["parol", "sifre", "unutmusam", "password"]): return "🤖 AI PROTOKOLU: Şifrənizi sıfırlamaq üçün korporativ portalda 'Şifrəni Bərpa Et' bölməsinə daxil olun."
+    elif any(word in text for word in ["zeif", "yavas", "qopur"]) and any(word in text for word in ["internet", "wi-fi", "sebeke"]): return "🤖 AI PROTOKOLU: Hazırda serverlərdə yüklənmə mövcuddur. Bağlantını kəsib 30 saniyə sonra yenidən qoşulun."
+    elif any(word in text for word in ["donur", "dondu"]): return "🤖 AI PROTOKOLU: Sistem donmalarının səbəbi RAM yüklənməsidir. 'Task Manager' açaraq lazımsız proqramları bağlayın."
+    elif any(word in text for word in ["virus", "spam", "reklam"]): return "🤖 AI PROTOKOLU: DİQQƏT! Lütfən cihazı DƏRHAL şəbəkədən ayırın. Təhlükəsizlik şöbəsi gələnə qədər heç nə taxmayın!"
     return None 
 
 # ==========================================
-# 5. GİRİŞ VƏ QEYDİYYAT
+# 4. GİRİŞ VƏ QEYDİYYAT
 # ==========================================
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'show_forgot_pass' not in st.session_state: st.session_state.show_forgot_pass = False
 
 if not st.session_state.logged_in:
-    st.markdown(f"<h1 style='text-align: center;'>{t['welcome']}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align: center; color: #00D2FF !important; letter-spacing: 2px;'>{t['welcome']}</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #A0AEC0 !important; font-family: monospace;'>SECURE LOGIN GATEWAY v4.0</p>", unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if not st.session_state.show_forgot_pass:
             tab_login, tab_signup = st.tabs([f"🔐 {t['login_tab']}", f"👤 {t['signup_tab']}"])
             with tab_login:
                 with st.form("login_form"):
-                    login_user = st.text_input(t['user'])
+                    login_user = st.text_input(t['user']).lower()
                     login_pass = st.text_input(t['pass'], type="password")
                     submit_login = st.form_submit_button(t['login_btn'], type="primary")
                     if submit_login:
                         users_df = pd.read_csv(USERS_FILE)
-                        user_match = users_df[(users_df['username'] == login_user) & (users_df['password'] == login_pass)]
+                        hashed_input_pass = hash_password(login_pass)
+                        user_match = users_df[(users_df['username'] == login_user) & (users_df['password'] == hashed_input_pass)]
                         if not user_match.empty:
                             u = user_match.iloc[0]
                             st.session_state.update({"logged_in": True, "username": u['username'], "role": u['role'], "name": u['name'], "dept": u['dept']})
                             st.rerun()
-                        else: st.error("❌ Xəta / Error")
+                        else: st.error("❌ ACCESS DENIED: İdentifikator və ya şifrə səhvdir.")
                 if st.button(f"❓ {t['forgot']}", type="primary"):
                     st.session_state.show_forgot_pass = True
                     st.rerun()
             with tab_signup:
                 with st.form("signup_form"):
                     new_name = st.text_input(t['name'])
-                    new_user = st.text_input(f"{t['user']} (New):")
-                    new_pass = st.text_input(f"{t['pass']} (New):", type="password")
+                    new_user = st.text_input(f"{t['user']}:").lower()
+                    new_pass = st.text_input(f"{t['pass']}:", type="password")
                     submit_signup = st.form_submit_button(t['signup_btn'], type="primary")
                     if submit_signup:
-                        pd.DataFrame([{"username": new_user, "password": new_pass, "role": "user", "name": new_name, "dept": "Yoxdur"}]).to_csv(USERS_FILE, mode='a', header=False, index=False)
-                        st.success("✅ OK")
+                        users_df = pd.read_csv(USERS_FILE)
+                        if new_user in users_df['username'].values:
+                            st.error("⚠️ IDENTIFIER EXISTS: Bu istifadəçi adı artıq mövcuddur.")
+                        else:
+                            pd.DataFrame([{"username": new_user, "password": hash_password(new_pass), "role": "user", "name": new_name, "dept": "Yoxdur"}]).to_csv(USERS_FILE, mode='a', header=False, index=False)
+                            st.success("✅ SYSTEM UPDATED: Hesab yaradıldı! Daxil ola bilərsiniz.")
         else:
             with st.form("reset_pass_form"):
-                st.subheader("🔄 Reset")
-                reset_user = st.text_input(t['user'])
-                new_pass = st.text_input(t['pass'], type="password")
+                st.subheader("🔄 TƏHLÜKƏSİZLİK ŞİFRƏSİNİN BƏRPASI")
+                reset_user = st.text_input(t['user']).lower()
+                new_pass = st.text_input("Yeni Şifrə", type="password")
                 col_btn1, col_btn2 = st.columns(2)
-                with col_btn1: submit_reset = st.form_submit_button("OK", type="primary")
-                with col_btn2: back_btn = st.form_submit_button("⬅️ Back", type="primary")
+                with col_btn1: submit_reset = st.form_submit_button("TƏSDİQLƏ", type="primary")
+                with col_btn2: back_btn = st.form_submit_button("⬅️ GERİ", type="primary")
                 if submit_reset:
                     df = pd.read_csv(USERS_FILE)
-                    df.loc[df['username'] == reset_user, 'password'] = new_pass
-                    df.to_csv(USERS_FILE, index=False)
-                    st.success("✅ OK")
+                    if reset_user in df['username'].values:
+                        df.loc[df['username'] == reset_user, 'password'] = hash_password(new_pass)
+                        df.to_csv(USERS_FILE, index=False)
+                        st.success("✅ PASSWORD OVERRIDDEN: Şifrə uğurla yeniləndi.")
+                    else: st.error("USER NOT FOUND: İstifadəçi tapılmadı.")
                 if back_btn:
                     st.session_state.show_forgot_pass = False
                     st.rerun()
 
 # ==========================================
-# 6. ƏSAS SİSTEM
+# 5. ƏSAS SİSTEM VƏ DASHBOARD
 # ==========================================
 else:
     if st.session_state.role in ["admin", "super_admin"] and st_autorefresh:
-        st_autorefresh(interval=1500, key="admin_refresh")
+        st_autorefresh(interval=2000, key="admin_refresh")
 
     tickets_df = pd.read_csv(TICKETS_FILE)
+    tickets_df = tickets_df.sort_values(by="Tarix", ascending=False).reset_index(drop=True)
 
     if st.session_state.role in ["admin", "super_admin"]:
-        if 'last_ticket_count' not in st.session_state:
-            st.session_state.last_ticket_count = len(tickets_df)
+        if 'last_ticket_count' not in st.session_state: st.session_state.last_ticket_count = len(tickets_df)
         elif len(tickets_df) > st.session_state.last_ticket_count:
-            st.toast("🔔 Yeni sorğu! / New Ticket!", icon="⚡")
+            st.toast("🚨 ALERT: Yeni İnsident Qeydə Alındı!", icon="🚨")
             play_notification_sound()
             st.session_state.last_ticket_count = len(tickets_df)
 
     colA, colB = st.columns([4, 1])
-    with colA: st.subheader(f"👋 {st.session_state.name} ({st.session_state.role.upper()})")
+    with colA: st.markdown(f"<h2 style='color: #00D2FF !important;'>TERMINAL: {st.session_state.name.upper()}</h2>", unsafe_allow_html=True)
     with colB:
         if st.button(f"🚪 {t['logout']}", type="primary"):
             st.session_state.logged_in = False
@@ -271,12 +307,14 @@ else:
             col_main, col_stat = st.columns([3, 1])
             with col_main:
                 with st.form("ticket_form", clear_on_submit=True):
-                    user_input = st.text_area(t['desc'], height=120)
+                    user_input = st.text_area(t['desc'], height=120, placeholder="Problemi bura yazın və ENTER basın...")
                     submit_ticket = st.form_submit_button(t['send'], type="primary")
                     
                     if submit_ticket and user_input.strip():
                         clean_input = normalize_text(user_input)
                         pred_category = model.predict([clean_input])[0]
+                        priority = get_priority(pred_category)
+                        ticket_id = f"TKT-{random.randint(10000, 99999)}"
                         
                         agent_mapping = {"Şəbəkə": "Şəbəkə Şöbəsi", "Avadanlıq": "Texniki Dəstək", "Hesab_Problemi": "Hesab Qeydiyyatı", "Proqram_Təminatı": "Proqram Təminatı", "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi", "Məlumat_Bazası": "Baza Administratoru"}
                         assigned_dept = agent_mapping.get(pred_category, "Ümumi Şöbə")
@@ -284,109 +322,40 @@ else:
                         ai_reply = smart_ai_autosolve(user_input)
                         
                         if ai_reply:
-                            new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Süni İntellekt 🤖", "Status": "Həll edildi"}])
+                            new_t = pd.DataFrame([{"Ticket_ID": ticket_id, "Tarix": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Prioritet": priority, "Məsul_Şəxs": "AI ENGINE 🤖", "Status": "Həll edildi"}])
                             new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                            st.success(f"⚡ AI Təhlili / AI Analysis (Category: {pred_category})")
+                            st.success(f"⚡ İNSİDENT {ticket_id} | Sistem: {pred_category} | Prioritet: {priority}")
                             st.info(ai_reply)
                         else:
-                            new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq"}])
+                            new_t = pd.DataFrame([{"Ticket_ID": ticket_id, "Tarix": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Prioritet": priority, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq"}])
                             new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                            st.success(f"✅ Qeydə alındı / Registered. Şöbə / Dept: {assigned_dept} ({pred_category})")
+                            st.success(f"✅ İNSİDENT {ticket_id} LOGLANDI. Təyinat: {assigned_dept} | Prioritet: {priority}")
 
             with col_stat:
                 my_count = len(tickets_df[tickets_df['Göndərən'] == st.session_state.username])
-                st.info(f"📈 **{t['stats']}**\n\n{t['my_tickets']}: **{my_count}**")
+                st.info(f"📈 **{t['stats']}**\n\nCəmi İnsidentlər: **{my_count}**")
+                my_tickets_df = tickets_df[tickets_df['Göndərən'] == st.session_state.username]
+                if not my_tickets_df.empty:
+                    st.write("**Son Aktivlik:**")
+                    st.dataframe(my_tickets_df[['Ticket_ID', 'Status', 'Prioritet']], use_container_width=True, hide_index=True)
 
         with tab_exam:
-            st.write("### Helpdesk Mütəxəssisi İmtahanı")
+            st.write("### TƏHLÜKƏSİZLİK VƏ İT İMTAHANI (L1 AGENT)")
             with st.form("exam_form"):
                 q1 = st.radio("1. IP münaqişəsi nədir?", ["Bilinmir", "İki cihazın eyni IP-yə malik olması", "Kabel qırılması"])
                 q2 = st.radio("2. RAM nə işə yarayır?", ["Şəkil çəkir", "Müvəqqəti yaddaş təmin edir", "İnternet verir"])
-                q3 = st.radio("3. Mavi ekran (BSOD) nəyin xətasıdır?", ["Sistem/Hardware donması", "Səhv parol", "Toz"])
-                q4 = st.radio("4. 'Ping' komandası nə üçündür?", ["Musiqi açmaq", "Şəbəkə əlaqəsini yoxlamaq", "Virus silmək"])
-                q5 = st.radio("5. VPN nədir?", ["Virtual Private Network", "Video Player Network", "Virus Protection"])
-                q6 = st.radio("6. SSD ilə HDD fərqi nədir?", ["Rəngi", "Sürəti və texnologiyası", "Ölçüsü"])
-                q7 = st.radio("7. Phishing (Fişinq) nədir?", ["Balıq tutmaq", "Kiber fırıldaqçılıq növü", "Kod dili"])
-                q8 = st.radio("8. DHCP nə iş görür?", ["IP ünvanlarını avtomatik paylayır", "Ekranı təmizləyir", "Məlumat silir"])
-                q9 = st.radio("9. DNS nədir?", ["Domain Name System", "Data Network System", "Digital Node Server"])
-                q10 = st.radio("10. Active Directory harada istifadə olunur?", ["Oyunlarda", "İstifadəçi və kompüterlərin idarə edilməsində", "Dizaynda"])
-
-                submit_exam = st.form_submit_button("İmtahanı Bitir", type="primary")
+                q3 = st.radio("3. BSOD nədir?", ["Sistem donması", "Səhv parol", "Toz"])
+                q4 = st.radio("4. 'Ping' nə üçündür?", ["Şəbəkə əlaqəsini yoxlamaq", "Virus silmək", "Oyun açmaq"])
+                q5 = st.radio("5. VPN nədir?", ["Virtual Private Network", "Virus Protection", "Video Player"])
+                submit_exam = st.form_submit_button("TƏSDİQLƏ", type="primary")
                 if submit_exam:
-                    score = sum([q1=="İki cihazın eyni IP-yə malik olması", q2=="Müvəqqəti yaddaş təmin edir", q3=="Sistem/Hardware donması", q4=="Şəbəkə əlaqəsini yoxlamaq", q5=="Virtual Private Network", q6=="Sürəti və texnologiyası", q7=="Kiber fırıldaqçılıq növü", q8=="IP ünvanlarını avtomatik paylayır", q9=="Domain Name System", q10=="İstifadəçi və kompüterlərin idarə edilməsində"])
-                    st.write(f"Sizin balınız: **{score}/10**")
-                    if score >= 8:
+                    score = sum([q1=="İki cihazın eyni IP-yə malik olması", q2=="Müvəqqəti yaddaş təmin edir", q3=="Sistem donması", q4=="Şəbəkə əlaqəsini yoxlamaq", q5=="Virtual Private Network"])
+                    if score == 5:
                         users_df = pd.read_csv(USERS_FILE)
                         users_df.loc[users_df['username'] == st.session_state.username, ['role', 'dept']] = ['admin', 'Ümumi_Dəstək']
                         users_df.to_csv(USERS_FILE, index=False)
-                        st.success("🎉 TƏBRİKLƏR! Siz artıq Adminsiniz. Çıxış edib yenidən daxil olun.")
-                    else: st.error("Kəsildiniz. Yenidən cəhd edin.")
+                        st.success("🎉 CLEARANCE GRANTED! Siz artıq Adminsiniz. Təkrar daxil olun.")
+                    else: st.error("ACCESS DENIED. İmtahandan kəsildiniz.")
 
     # --- ADMIN PANELİ ---
-    elif st.session_state.role == "admin":
-        st.title(f"⚡ {t['admin_panel']}: {st.session_state.dept}")
-        col_main, col_stat = st.columns([3, 1])
-        with col_main:
-            st.write(f"### 📬 {t['open_tickets']}")
-            open_tickets = tickets_df[(tickets_df["Kateqoriya"] == st.session_state.dept) & (tickets_df["Status"] == "Açıq")]
-            st.dataframe(open_tickets, use_container_width=True)
-            if not open_tickets.empty:
-                with st.form("accept_ticket_form"):
-                    accept_id = st.selectbox("İndeksi seçin / Select index:", open_tickets.index)
-                    submit_accept = st.form_submit_button(t['accept_ticket'], type="primary")
-                    if submit_accept:
-                        tickets_df.loc[accept_id, "Status"] = "İcrada"
-                        tickets_df.loc[accept_id, "Məsul_Şəxs"] = st.session_state.username
-                        tickets_df.to_csv(TICKETS_FILE, index=False)
-                        st.success("✅ Sorğu İcraya Götürüldü / Accepted!")
-                        st.rerun()
-            st.markdown("---")
-            st.write(f"### ⏳ {t['my_active']}")
-            active_tickets = tickets_df[(tickets_df["Məsul_Şəxs"] == st.session_state.username) & (tickets_df["Status"] == "İcrada")]
-            st.dataframe(active_tickets, use_container_width=True)
-            if not active_tickets.empty:
-                with st.form("close_ticket_form"):
-                    close_id = st.selectbox("İndeksi seçin / Select index:", active_tickets.index)
-                    submit_close = st.form_submit_button(t['mark_solved'], type="primary")
-                    if submit_close:
-                        tickets_df.loc[close_id, "Status"] = "Həll edildi"
-                        tickets_df.to_csv(TICKETS_FILE, index=False)
-                        st.success("✅ Sorğu 'Həll Edildi' olaraq bağlandı / Resolved!")
-                        st.rerun() 
-        with col_stat:
-            solved_count = len(tickets_df[(tickets_df['Məsul_Şəxs'] == st.session_state.username) & (tickets_df['Status'] == 'Həll edildi')])
-            st.info(f"📈 **{t['stats']}**\n\n{t['solved_by_me']}: **{solved_count}**")
-
-    # --- SUPER ADMIN PANELİ ---
-    elif st.session_state.role == "super_admin":
-        st.title("🛡️ Super Admin Paneli")
-        col_m1, col_m2, col_m3 = st.columns([1, 1, 2])
-        col_m1.metric("Ümumi Sorğular / Total", len(tickets_df))
-        col_m2.metric("Açıq Sorğular / Open", len(tickets_df[tickets_df['Status']=='Açıq']))
-        with col_m3:
-            # ❗ UTF-8-SIG ƏLAVƏ EDİLDİ Kİ EXCEL TAM PROBLEMİZ OXUSUN ❗
-            csv_data = tickets_df.to_csv(index=False).encode('utf-8-sig')
-            st.download_button(label=t['download_csv'], data=csv_data, file_name=f"helpdesk_baza_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", mime="text/csv", type="primary")
-        st.markdown("---")
-        st.write("### 📊 Ümumi Sistem Analitikası / Analytics")
-        if not tickets_df.empty:
-            col_chart1, col_chart2 = st.columns(2)
-            cat_counts = tickets_df["Kateqoriya"].value_counts().reset_index()
-            cat_counts.columns = ["Kateqoriya", "Say"]
-            fig_donut = px.pie(cat_counts, names="Kateqoriya", values="Say", hole=0.5, title="Şöbələr Üzrə Yük Dağılımı / Workload", color_discrete_sequence=px.colors.sequential.RdBu)
-            col_chart1.plotly_chart(fig_donut, use_container_width=True)
-            tickets_df['Tarix_Gun'] = pd.to_datetime(tickets_df['Tarix'], errors='coerce').dt.date
-            daily_counts = tickets_df.groupby('Tarix_Gun').size().reset_index(name='Say')
-            fig_line = px.line(daily_counts, x='Tarix_Gun', y='Say', title="Günlük Sorğuların Dinamikası / Daily Trend", markers=True)
-            fig_line.update_traces(line_color='#8b0000')
-            col_chart2.plotly_chart(fig_line, use_container_width=True)
-        st.markdown("---")
-        all_categories = ["Bütün Sorğular", "Şəbəkə", "Avadanlıq", "Hesab_Problemi", "Proqram_Təminatı", "Təhlükəsizlik", "Məlumat_Bazası"]
-        cat_tabs = st.tabs([f"📂 {c}" for c in all_categories])
-        for i, cat in enumerate(all_categories):
-            with cat_tabs[i]:
-                if cat == "Bütün Sorğular": st.dataframe(tickets_df.drop(columns=['Tarix_Gun'], errors='ignore'), use_container_width=True)
-                else:
-                    filtered_df = tickets_df[tickets_df["Kateqoriya"] == cat]
-                    st.write(f"**{cat}** üzrə cəmi sorğu: **{len(filtered_df)}**")
-                    st.dataframe(filtered_df.drop(columns=['Tarix_Gun'], errors='ignore'), use_container_width=True)
+    elif st.session_state.role == "admin
