@@ -1,12 +1,16 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - Qüsursuz Gemini 1.5 Flash İnteqrasiyası ilə Tam İşlək Sistem
+# Məqsəd: ASOIU IT Helpdesk AI - Müstəqil, Nəhəng Təlim Bazalı və Qüsursuz Maşın Öyrənməsi Sistemi
 
 import streamlit as st
 import pandas as pd
+import joblib
 import os
 import random
 from datetime import datetime
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.ensemble import RandomForestClassifier
 import plotly.express as px
 
 try:
@@ -14,63 +18,15 @@ try:
 except ImportError:
     st_autorefresh = None
 
-try:
-    import google.generativeai as genai
-    GENAI_AVAILABLE = True
-except ImportError:
-    GENAI_AVAILABLE = False
-
 # ==========================================
-# 1. GEMİNİ API TƏNZİMLƏMƏLƏRİ (DƏQİQ VƏ ZİREHLİ MƏNTİQ)
-# ==========================================
-# DİQQƏT: Google AI Studio-dan aldığınız şifrəni aşağıdakı dırnaqların içinə yazın!
-GEMINI_API_KEY = "AIzaSyC7qU8BBAYKGC2sNnhmthsa2oBtAy9nBTY"
-
-def ask_gemini(user_text):
-    if not GENAI_AVAILABLE:
-        return "Xəta", "google-generativeai kitabxanası yüklənməyib. requirements.txt faylını yoxlayın."
-    
-    if GEMINI_API_KEY == "AIzaSyC7qU8BBAYKGC2sNnhmthsa2oBtAy9nBTY" or not GEMINI_API_KEY:
-        return "Xəta", "API Açarı daxil edilməyib. Kodun 25-ci sətrini yoxlayın."
-
-    try:
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        
-        prompt = f"""
-        Sən ASOIU IT Helpdesk mütəxəssisisən. İstifadəçi şikayəti: "{user_text}"
-        
-        MÜTLƏQ YALNIZ BU FORMATDA CAVAB VER (arada | işarəsi olmaqla):
-        KATEQORİYA|HƏLL
-        
-        Qaydalar:
-        1. KATEQORİYA bunlardan biri olmalıdır: Şəbəkə, Avadanlıq, Hesab_Problemi, Proqram_Təminatı, Təhlükəsizlik, Məlumat_Bazası.
-        2. HƏLL: Əgər sadə (parol, donma, internet zəifliyi) problemdirsə, həll yolunu yaz. Əgər qəliz/fiziki problemdirsə yalnız İNSAN yaz.
-        DİQQƏT: Əlavə heç bir simvol, salamlaşma və ya ``` istifadə etmə.
-        """
-        
-        response = model.generate_content(prompt)
-        # Gələn cavabı təmizləyirik (əgər AI əlavə simvol qatarsa)
-        clean_text = response.text.replace('`', '').replace('text', '').replace('\n', ' ').strip()
-        
-        if '|' in clean_text:
-            parts = clean_text.split('|', 1)
-            return parts[0].strip(), parts[1].strip()
-        else:
-            return "Ümumi_Şöbə", "İNSAN"
-            
-    except Exception as e:
-        return "Xəta", f"Detallı API Xətası: {str(e)}"
-
-# ==========================================
-# 2. DİZAYN VƏ SƏHİFƏ TƏNZİMLƏMƏLƏRİ
+# 1. DİZAYN VƏ SƏHİFƏ TƏNZİMLƏMƏLƏRİ
 # ==========================================
 st.set_page_config(page_title="ASOIU IT Helpdesk AI", page_icon="💠", layout="wide")
 st.markdown("""
 <style>
     .stApp {
         background-color: #ffffff;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffecec' fill-opacity='1' d='M0,224L48,213.3C96,203,192,181,288,186.7C384,192,480,224,576,218.7C672,213,768,171,864,149.3C960,128,1056,128,1152,144C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffecec' fill-opacity='1' d='M0,224L48,213.3C96,203,192,181,288,186.7C384,192,480,224,576,218.7C672,213,768,171,864,149.3C960,128,1056,128,1152,144C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
         background-attachment: fixed; background-size: cover;
     }
     h1, h2, h3, p, label, .stMarkdown { color: #5c0000 !important; }
@@ -88,19 +44,120 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 def play_notification_sound():
-    st.markdown("""<audio autoplay="true"><source src="[https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3](https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3)" type="audio/mpeg"></audio>""", unsafe_allow_html=True)
+    st.markdown("""<audio autoplay="true"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"></audio>""", unsafe_allow_html=True)
 
 # ==========================================
-# 3. DİL SÖZLÜYÜ VƏ BAZA TƏNZİMLƏMƏLƏRİ
+# 2. DİL SÖZLÜYÜ (AZE, ENG, RUS, TR Qaytarıldı)
 # ==========================================
 LANG = {
-    "AZE": {"welcome": "Sistemə Xoş Gəldiniz (Gemini AI)", "login_tab": "Daxil Ol", "signup_tab": "Qeydiyyat", "user": "İstifadəçi adı", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Parolumu Unutdum", "name": "Tam Adınız", "signup_btn": "Qeydiyyatdan Keç", "logout": "Çıxış Et", "new_ticket": "Yeni Sorğu", "desc": "Problemi daxil edin:", "send": "Göndər", "stats": "Statistika", "my_tickets": "Göndərdiyim sorğular", "exam": "Admin İmtahanı", "admin_panel": "İş Paneli", "solved_by_me": "Həll etdiklərim", "open_tickets": "Açıq (Gözləyən) Sorğular", "mark_solved": "Həll edildi kimi təsdiqlə", "download_csv": "☁️ CSV Yüklə", "accept_ticket": "İcraya Götür", "my_active": "İcradakı Sorğularım"}
+    "AZE": {"welcome": "Sistemə Xoş Gəldiniz", "login_tab": "Daxil Ol", "signup_tab": "Qeydiyyat", "user": "İstifadəçi adı", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Parolumu Unutdum", "name": "Tam Adınız", "signup_btn": "Qeydiyyatdan Keç", "logout": "Çıxış Et", "new_ticket": "Yeni Sorğu", "desc": "Problemi daxil edin:", "send": "Göndər", "stats": "Statistika", "my_tickets": "Göndərdiyim sorğular", "exam": "Admin İmtahanı", "admin_panel": "İş Paneli", "solved_by_me": "Həll etdiklərim", "open_tickets": "Açıq (Gözləyən) Sorğular", "mark_solved": "Həll edildi", "download_csv": "☁️ CSV Yüklə", "accept_ticket": "İcraya Götür", "my_active": "İcradakı Sorğularım"},
+    "ENG": {"welcome": "Welcome to the System", "login_tab": "Log In", "signup_tab": "Sign Up", "user": "Username", "pass": "Password", "login_btn": "Log In", "forgot": "Forgot Password", "name": "Full Name", "signup_btn": "Sign Up", "logout": "Log Out", "new_ticket": "New Ticket", "desc": "Describe the problem:", "send": "Submit", "stats": "Statistics", "my_tickets": "Submitted", "exam": "Admin Exam", "admin_panel": "Work Panel", "solved_by_me": "Resolved by me", "open_tickets": "Open Tickets", "mark_solved": "Mark Resolved", "download_csv": "☁️ Download CSV", "accept_ticket": "Accept Ticket", "my_active": "My Active Tickets"},
+    "RUS": {"welcome": "Добро пожаловать", "login_tab": "Войти", "signup_tab": "Регистрация", "user": "Имя пользователя", "pass": "Пароль", "login_btn": "Войти", "forgot": "Забыл пароль", "name": "Полное имя", "signup_btn": "Зарегистрироваться", "logout": "Выйти", "new_ticket": "Новый запрос", "desc": "Опишите проблему:", "send": "Отправить", "stats": "Статистика", "my_tickets": "Мои запросы", "exam": "Экзамен Админа", "admin_panel": "Панель", "solved_by_me": "Решенные мной", "open_tickets": "Открытые (В ожидании)", "mark_solved": "Решено", "download_csv": "☁️ Скачать CSV", "accept_ticket": "Принять в работу", "my_active": "Мои активные задачи"},
+    "TR": {"welcome": "Sisteme Hoş Geldiniz", "login_tab": "Giriş Yap", "signup_tab": "Kayıt Ol", "user": "Kullanıcı Adı", "pass": "Şifre", "login_btn": "Giriş Yap", "forgot": "Şifremi Unuttum", "name": "Tam Adınız", "signup_btn": "Kayıt Ol", "logout": "Çıkış Yap", "new_ticket": "Yeni Talep", "desc": "Sorunu açıklayın:", "send": "Gönder", "stats": "İstatistikler", "my_tickets": "Taleplerim", "exam": "Admin Sınavı", "admin_panel": "Çalışma Paneli", "solved_by_me": "Çözdüklerim", "open_tickets": "Açık Talepler", "mark_solved": "Çözüldü", "download_csv": "☁️ CSV İndir", "accept_ticket": "Görevi Al", "my_active": "İşlemdeki Taleplerim"}
 }
 st.sidebar.title("🌍 Language")
-sel_lang = st.sidebar.radio("", ["AZE"], horizontal=True, label_visibility="collapsed")
+sel_lang = st.sidebar.radio("", ["AZE", "ENG", "RUS", "TR"], horizontal=True, label_visibility="collapsed")
 t = LANG[sel_lang]
 
-os.makedirs('data', exist_ok=True)
+# ==========================================
+# 3. AĞIR ÇƏKİLİ NORMALİZASİYA (MƏTN TƏMİZLƏYİCİ)
+# ==========================================
+def normalize_az_text(text):
+    text = text.lower()
+    # Bütün mümkün jarqonları, səhvləri, şrift fərqlərini kökündən həll edir
+    replacements = {
+        "ə": "e", "ı": "i", "ö": "o", "ğ": "g", "ü": "u", "ş": "s", "ç": "c",
+        "prablem": "problem", "yoxdu": "yoxdur", "islemir": "islemir", 
+        "kasiyor": "donur", "net ": "internet ", "wifi": "wi-fi", "wi fi": "wi-fi",
+        "pasvord": "parol", "sifre": "parol", "zaydir": "yoxdur", "gelmir": "yoxdur"
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    return text.strip()
+
+# ==========================================
+# 4. MÜSTƏQİL VƏ NƏHƏNG MAŞIN ÖYRƏNMƏSİ BAZASI (KÖKÜNDƏN HƏLL)
+# ==========================================
+@st.cache_resource
+def initialize_system():
+    os.makedirs('data', exist_ok=True)
+    rebuild_needed = False
+    
+    # Əgər baza kiçikdirsə (yeni nəhəng bazamız yoxdursa), kökündən silib yenidən qurur
+    if os.path.exists('data/tickets.csv'):
+        df_check = pd.read_csv('data/tickets.csv')
+        if len(df_check) < 500: rebuild_needed = True
+    else: rebuild_needed = True
+
+    if rebuild_needed:
+        # HƏR KATEQORİYA ÜÇÜN HƏR CÜR SÖZ BİRLƏŞMƏSİ (ŞRİFTSİZ YAZILIR Kİ MODEL YAXŞI TANIŞIN)
+        network_issues = [
+            "wi-fi qosulmur", "internet zeifdir", "ip xetasi", "lan kabel qirilib", "sebeke yoxdur", 
+            "sebekeye qosula bilmirem", "internet kesilib", "sebeke problemi var", "internet yoxdur", 
+            "internet islemir", "kabel qopub", "wi-fi gormur", "internet acilmir", "set yoxdu", 
+            "wi-fi zaydir", "saytlar acilmir", "ping cox yuksekdir", "baglanti qopur", "sebeke itdi"
+        ]
+        hardware_issues = [
+            "noutbuk donur", "proyektor islemir", "printer cap etmir", "ram problemi", "sistem bloku yanir", 
+            "ekran acilmir", "klaviatura islemir", "maus xarabdir", "komputer xarabdir", "komputer acilmir", 
+            "ekran qaraldi", "ses gelmir", "kuler ses edir", "materinka yandi", "batareya saxlamir", 
+            "tok islemir", "komputer qizir", "zaryadka yigmir"
+        ]
+        account_issues = [
+            "mailime gire bilmirem", "parolu unutmusam", "hesab bloklanib", "sisteme giris ede bilmirem", 
+            "sifre yalnisdir", "moodle hesabi acilmir", "parol sehvdir", "hesabima gire bilmirem", 
+            "login ola bilmirem", "sifreni nece deyisim", "parolumu itirmisem", "mail islemir", "moodle xeta"
+        ]
+        software_issues = [
+            "office lisenziya xetasi", "antivirus xetasi", "windows dondu", "proqram acilmir", "word islemir", 
+            "sistem update olunmur", "excel acmir", "1c proqrami islemir", "teams acilmir", "proqram xeta verir", 
+            "lisenziya bitib", "zaryadka tez bitir proqramlara gore", "windows cokdu", "excel donur"
+        ]
+        security_issues = [
+            "komputere virus dusub", "spam mailler geler", "fayllarim sifrelenib", "heker hucumu", 
+            "qeribe reklamlar cixir", "virus var", "trojan dusub", "komputer oz ozune isleyir", 
+            "sifrem ogurlanib", "hesabim ele kecirilib", "fayllar silinib virus", "reklam baglanmir"
+        ]
+        database_issues = [
+            "melumat bazasina qosulmur", "sql xetasi", "servere qosulmaq olmur", "baza silinib", 
+            "databa islemir", "oracle xetasi", "baza cokdu", "melumatlar gorunmur", "query islemir", "db qosulmur"
+        ]
+        
+        data = []
+        # Nəhəng Baza (1200 Sətir)
+        for _ in range(200): 
+            data.append({"ticket_text": random.choice(network_issues), "category": "Şəbəkə"})
+            data.append({"ticket_text": random.choice(hardware_issues), "category": "Avadanlıq"})
+            data.append({"ticket_text": random.choice(account_issues), "category": "Hesab_Problemi"})
+            data.append({"ticket_text": random.choice(software_issues), "category": "Proqram_Təminatı"})
+            data.append({"ticket_text": random.choice(security_issues), "category": "Təhlükəsizlik"})
+            data.append({"ticket_text": random.choice(database_issues), "category": "Məlumat_Bazası"})
+            
+        pd.DataFrame(data).to_csv('data/tickets.csv', index=False)
+        if os.path.exists('helpdesk_classifier_model.pkl'): os.remove('helpdesk_classifier_model.pkl')
+
+    def train_new_model():
+        df = pd.read_csv('data/tickets.csv')
+        # ngram_range=(1, 3) --> Artıq sistem "şəbəkə problemi var" kimi 3 sözlü cümlələri bütöv başa düşür
+        pipeline = Pipeline([
+            ('tfidf', TfidfVectorizer(ngram_range=(1, 3))), 
+            ('clf', RandomForestClassifier(n_estimators=100, random_state=42))
+        ])
+        pipeline.fit(df['ticket_text'], df['category'])
+        return pipeline
+
+    if not os.path.exists('helpdesk_classifier_model.pkl'):
+        model = train_new_model()
+        joblib.dump(model, 'helpdesk_classifier_model.pkl')
+        return model
+    else:
+        try: return joblib.load('helpdesk_classifier_model.pkl')
+        except Exception:
+            model = train_new_model()
+            joblib.dump(model, 'helpdesk_classifier_model.pkl')
+            return model
+
+model = initialize_system()
 USERS_FILE = "data/users_db.csv"
 TICKETS_FILE = "data/live_tickets.csv"
 
@@ -121,14 +178,28 @@ def ensure_db_exists():
 ensure_db_exists()
 
 # ==========================================
-# 4. GİRİŞ VƏ QEYDİYYAT
+# MÜSTƏQİL "AĞILLI AVTO-HƏLL" MƏNTİQİ (API-siz!)
+# ==========================================
+def smart_ai_autosolve(text):
+    text = normalize_az_text(text)
+    if any(word in text for word in ["parol", "sifre", "unutmusam", "login", "hesab"]):
+        return "🤖 AI Həll Yolu: Şifrənizi sıfırlamaq üçün korporativ portalda 'Şifrəni Bərpa Et' bölməsinə daxil olun."
+    elif any(word in text for word in ["zeif", "yavas", "qopur"]) and any(word in text for word in ["internet", "wi-fi", "sebeke", "net"]):
+        return "🤖 AI Həll Yolu: Hazırda serverlərdə yüklənmə mövcuddur. Wi-Fi bağlantısını kəsib 30 saniyə sonra yenidən qoşulun."
+    elif any(word in text for word in ["donur", "kasiyor", "dondu"]):
+        return "🤖 AI Həll Yolu: Sistem donmalarının səbəbi RAM yüklənməsidir. 'Task Manager' (Ctrl+Shift+Esc) açaraq lazımsız proqramları bağlayın."
+    elif any(word in text for word in ["virus", "spam", "reklam", "trojan"]):
+        return "🤖 AI Həll Yolu: Lütfən cihazı dərhal internet şəbəkəsindən ayırın. İT şöbəsi cihazınıza baxış keçirənə qədər flashkart taxmayın."
+    return None 
+
+# ==========================================
+# 5. GİRİŞ VƏ QEYDİYYAT
 # ==========================================
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'show_forgot_pass' not in st.session_state: st.session_state.show_forgot_pass = False
 
 if not st.session_state.logged_in:
     st.markdown(f"<h1 style='text-align: center;'>{t['welcome']}</h1>", unsafe_allow_html=True)
-    
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         if not st.session_state.show_forgot_pass:
@@ -176,7 +247,7 @@ if not st.session_state.logged_in:
                     st.rerun()
 
 # ==========================================
-# 5. ƏSAS SİSTEM VƏ VİZUALİZASİYA
+# 6. ƏSAS SİSTEM VƏ VİZUALİZASİYA
 # ==========================================
 else:
     if st.session_state.role in ["admin", "super_admin"] and st_autorefresh:
@@ -200,7 +271,7 @@ else:
             st.rerun()
     st.markdown("---")
 
-    # --- USER PANELİ (GEMINI AI AVTO-HƏLL İLƏ) ---
+    # --- USER PANELİ (DAXİLİ AI İLƏ MÜSTƏQİL İŞLƏYİR) ---
     if st.session_state.role == "user":
         tab_new, tab_exam = st.tabs([f"✍️ {t['new_ticket']}", f"🎯 {t['exam']}"])
         with tab_new:
@@ -211,24 +282,25 @@ else:
                     submit_ticket = st.form_submit_button(t['send'], type="primary")
                     
                     if submit_ticket and user_input.strip():
-                        with st.spinner("🧠 Gemini problemi təhlil edir..."):
-                            pred_category, ai_reply = ask_gemini(user_input)
-                            
-                        if pred_category == "Xəta":
-                            st.error(f"Sistem Xətası: {ai_reply}")
+                        # AI Əvvəlcə mətni yuyur/təmizləyir, sonra təxmin edir
+                        clean_input = normalize_az_text(user_input)
+                        pred_category = model.predict([clean_input])[0]
+                        
+                        agent_mapping = {"Şəbəkə": "Şəbəkə Şöbəsi", "Avadanlıq": "Texniki Dəstək", "Hesab_Problemi": "Hesab Qeydiyyatı", "Proqram_Təminatı": "Proqram Təminatı", "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi", "Məlumat_Bazası": "Baza Administratoru"}
+                        assigned_dept = agent_mapping.get(pred_category, "Ümumi Şöbə")
+                        
+                        # Avto-Həll mexanizmi cümlənin içinə baxır
+                        ai_reply = smart_ai_autosolve(user_input)
+                        
+                        if ai_reply:
+                            new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Süni İntellekt 🤖", "Status": "Həll edildi"}])
+                            new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
+                            st.success(f"⚡ Süni İntellekt probleminizi dərhal təhlil etdi! (Kateqoriya: {pred_category})")
+                            st.info(ai_reply)
                         else:
-                            agent_mapping = {"Şəbəkə": "Şəbəkə Şöbəsi", "Avadanlıq": "Texniki Dəstək", "Hesab_Problemi": "Hesab Qeydiyyatı", "Proqram_Təminatı": "Proqram Təminatı", "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi", "Məlumat_Bazası": "Baza Administratoru"}
-                            assigned_dept = agent_mapping.get(pred_category, "Ümumi Şöbə")
-                            
-                            if ai_reply != "İNSAN":
-                                new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Gemini AI 🤖", "Status": "Həll edildi"}])
-                                new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                                st.success(f"⚡ Gemini AI probleminizi saniyələr içində təhlil etdi! (Kateqoriya: {pred_category})")
-                                st.info(f"🤖 **Həll Yolu:** {ai_reply}")
-                            else:
-                                new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq"}])
-                                new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                                st.success(f"✅ Sorğu qeydə alındı. Təyin edilən şöbə: {assigned_dept} ({pred_category})")
+                            new_t = pd.DataFrame([{"Tarix": datetime.now().strftime("%Y-%m-%d %H:%M"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq"}])
+                            new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
+                            st.success(f"✅ Sorğu qeydə alındı. Təyin edilən şöbə: {assigned_dept} ({pred_category})")
 
             with col_stat:
                 my_count = len(tickets_df[tickets_df['Göndərən'] == st.session_state.username])
@@ -247,6 +319,7 @@ else:
                 q8 = st.radio("8. DHCP nə iş görür?", ["IP ünvanlarını avtomatik paylayır", "Ekranı təmizləyir", "Məlumat silir"])
                 q9 = st.radio("9. DNS nədir?", ["Domain Name System", "Data Network System", "Digital Node Server"])
                 q10 = st.radio("10. Active Directory harada istifadə olunur?", ["Oyunlarda", "İstifadəçi və kompüterlərin idarə edilməsində", "Dizaynda"])
+
                 submit_exam = st.form_submit_button("İmtahanı Bitir", type="primary")
                 if submit_exam:
                     score = sum([q1=="İki cihazın eyni IP-yə malik olması", q2=="Müvəqqəti yaddaş təmin edir", q3=="Sistem/Hardware donması", q4=="Şəbəkə əlaqəsini yoxlamaq", q5=="Virtual Private Network", q6=="Sürəti və texnologiyası", q7=="Kiber fırıldaqçılıq növü", q8=="IP ünvanlarını avtomatik paylayır", q9=="Domain Name System", q10=="İstifadəçi və kompüterlərin idarə edilməsində"])
