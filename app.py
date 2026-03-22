@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU IT Helpdesk AI - 100,000+ Sətirlik Baza və 1000 Qərar Ağacı (Ultra Big Data)
+# Məqsəd: ASOIU IT Helpdesk AI - 100,000+ Sətirlik Baza, 1000 Qərar Ağacı və UTF-8-SIG (Excel CSV Fix)
 
 import streamlit as st
 import pandas as pd
@@ -73,7 +73,6 @@ def initialize_system():
     os.makedirs('data', exist_ok=True)
     rebuild_needed = False
     
-    # Baza ölçüsünü yoxlayır, 99,000-dən kiçikdirsə ULTRA NƏHƏNG bazanı qurur
     if os.path.exists('data/tickets.csv'):
         df_check = pd.read_csv('data/tickets.csv')
         if len(df_check) < 99000: rebuild_needed = True
@@ -118,7 +117,6 @@ def initialize_system():
         ]
         
         data = []
-        # 17000 DÖVR x 6 KATEQORİYA = 102,000 SƏTİRLİK ULTRA NƏHƏNG BAZA YARADILIR
         for _ in range(17000): 
             data.append({"ticket_text": random.choice(network_issues), "category": "Şəbəkə"})
             data.append({"ticket_text": random.choice(hardware_issues), "category": "Avadanlıq"})
@@ -133,9 +131,7 @@ def initialize_system():
     def train_new_model():
         df = pd.read_csv('data/tickets.csv')
         pipeline = Pipeline([
-            # max_features=20000 serverin 100 min sətri emal edərkən partlamamasının qarşısını alır
             ('tfidf', TfidfVectorizer(ngram_range=(1, 3), max_features=20000)), 
-            # 1000 AĞAC (n_estimators=1000) - Sıfır xəta üçün mükəmməl qərar vermə gücü
             ('clf', RandomForestClassifier(n_estimators=1000, random_state=42, n_jobs=-1))
         ])
         pipeline.fit(df['ticket_text'], df['category'])
@@ -279,7 +275,6 @@ else:
                     submit_ticket = st.form_submit_button(t['send'], type="primary")
                     
                     if submit_ticket and user_input.strip():
-                        # 100,000 SƏTİRLİK, 1000 AĞACLI MODEL TƏXMİN EDİR
                         clean_input = normalize_text(user_input)
                         pred_category = model.predict([clean_input])[0]
                         
@@ -369,7 +364,8 @@ else:
         col_m1.metric("Ümumi Sorğular / Total", len(tickets_df))
         col_m2.metric("Açıq Sorğular / Open", len(tickets_df[tickets_df['Status']=='Açıq']))
         with col_m3:
-            csv_data = tickets_df.to_csv(index=False).encode('utf-8')
+            # ❗ UTF-8-SIG ƏLAVƏ EDİLDİ Kİ EXCEL TAM PROBLEMİZ OXUSUN ❗
+            csv_data = tickets_df.to_csv(index=False).encode('utf-8-sig')
             st.download_button(label=t['download_csv'], data=csv_data, file_name=f"helpdesk_baza_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", mime="text/csv", type="primary")
         st.markdown("---")
         st.write("### 📊 Ümumi Sistem Analitikası / Analytics")
