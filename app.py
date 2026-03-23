@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU Command Center v6.5 - Hybrid NLP, Zero-Error Routing, 1M Data
+# Məqsəd: ASOIU Command Center v6.6 - Hibrid NLP Prioritet Düzəlişi (Zero-Error)
 
 import streamlit as st
 import pandas as pd
@@ -75,7 +75,7 @@ st.sidebar.subheader("📡 SYSTEM HEALTH")
 st.sidebar.markdown("""
 <div style='font-family: monospace; font-size: 13px; color: #A0AEC0;'>
     CORE SERVER: <span style='color: #48BB78;'>🟢 ONLINE</span><br>
-    AI ENGINE: <span style='color: #48BB78;'>🧠 V6.5 (HYBRID NLP)</span><br>
+    AI ENGINE: <span style='color: #48BB78;'>🧠 V6.6 (HYBRID NLP)</span><br>
     DB STATUS: <span style='color: #48BB78;'>💾 ENCRYPTED</span><br>
     AUDIT LOGS: <span style='color: #00D2FF;'>🔴 RECORDING</span>
 </div>
@@ -98,7 +98,6 @@ if st.sidebar.button("📞 TƏCİLİ DƏSTƏK KANALI"):
             add_log("Təcili Dəstək düyməsinə basdı", st.session_state.get('username', 'Anonim'))
         else: st.sidebar.warning("Aktiv agent tapılmadı.")
 
-# MÜKƏMMƏLLƏŞDİRİLMİŞ MƏTN TƏMİZLƏYİCİ (ŞƏKİLÇİLƏRİ SİLİR)
 def normalize_text(text):
     text = text.lower()
     replacements = {
@@ -168,7 +167,7 @@ def initialize_system():
             joblib.dump(model, 'helpdesk_classifier_model.pkl')
             return model
 
-with st.spinner("🚀 HYBRID NLP ENGINE STARTING (1,000,000 DATA)..."):
+with st.spinner("🚀 NLP VECTOR ENGINE STARTING (1,000,000 DATA)..."):
     model = initialize_system()
 
 def ensure_db_exists():
@@ -321,12 +320,15 @@ else:
                         else:
                             clean_input = normalize_text(user_input)
                             
-                            # HIBRID NLP MƏNTİQİ: Mütləq Dəqiqlik (0 Xəta Sistemi)
-                            if any(w in clean_input for w in ["sebeke", "internet", "wi-fi", "wifi", "lan", "kabel", "ping"]): pred_category = "Şəbəkə"
-                            elif any(w in clean_input for w in ["parol", "sifre", "mail", "hesab", "moodle", "login"]): pred_category = "Hesab_Problemi"
-                            elif any(w in clean_input for w in ["ekran", "klaviatura", "maus", "proyektor", "printer", "noutbuk", "komputer", "ram", "yandi"]): pred_category = "Avadanlıq"
-                            elif any(w in clean_input for w in ["virus", "heker", "spam", "trojan", "reklam", "sifrelenib"]): pred_category = "Təhlükəsizlik"
+                            # HIBRID NLP MƏNTİQİ - DƏYİŞDİRİLMİŞ VƏ ƏN DƏQİQ ARDICILLIQ (0 XƏTA)
+                            # Əvvəlcə ən kritik və təhlükəli halları yoxlayırıq
+                            if any(w in clean_input for w in ["virus", "heker", "spam", "trojan", "reklam", "sifrelenib"]): pred_category = "Təhlükəsizlik"
                             elif any(w in clean_input for w in ["baza", "sql", "server", "1c", "oracle", "db"]): pred_category = "Məlumat_Bazası"
+                            # Sonra şəbəkə və hesabları
+                            elif any(w in clean_input for w in ["sebeke", "internet", "wi-fi", "wifi", "lan", "kabel", "ping"]): pred_category = "Şəbəkə"
+                            elif any(w in clean_input for w in ["parol", "sifre", "mail", "hesab", "moodle", "login"]): pred_category = "Hesab_Problemi"
+                            # "komputer" və "noutbuk" kimi ümumi avadanlıqlar isə ən sonda yoxlanır ki, virusla üst-üstə düşməsin
+                            elif any(w in clean_input for w in ["ekran", "klaviatura", "maus", "proyektor", "printer", "noutbuk", "komputer", "ram", "yandi"]): pred_category = "Avadanlıq"
                             elif any(w in clean_input for w in ["proqram", "word", "excel", "office", "windows", "update", "teams"]): pred_category = "Proqram_Təminatı"
                             else:
                                 # Açar söz tapılmasa AI (LinearSVC) işə düşür
