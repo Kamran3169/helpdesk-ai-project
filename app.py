@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU Command Center v7.0 - Soft & Modern SaaS UI (Hybrid NLP, 1M Data, Zero-Error)
+# Məqsəd: ASOIU Command Center v7.1 - Soft UI & Fixed Plotly Colors
 
 import streamlit as st
 import pandas as pd
@@ -85,7 +85,6 @@ def add_log(action, username="Sistem"):
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("📡 Sistem Statusu")
-# Yumşaq rənglərlə status paneli
 st.sidebar.markdown("""
 <div style='font-size: 14px; color: #4A5568;'>
     <b>Əsas Server:</b> <span style='color: #38A169;'>🟢 Aktiv</span><br>
@@ -209,7 +208,6 @@ def ensure_db_exists():
 ensure_db_exists()
 
 def get_priority(category):
-    # Yumşaq rənglərlə prioritetlər
     if category in ["Təhlükəsizlik", "Məlumat_Bazası"]: return "🔴 Kritik"
     elif category in ["Şəbəkə", "Hesab_Problemi"]: return "🟡 Yüksək"
     else: return "🟢 Normal"
@@ -461,8 +459,8 @@ else:
                 col_chart1, col_chart2 = st.columns(2)
                 cat_counts = tickets_df["Kateqoriya"].value_counts().reset_index()
                 cat_counts.columns = ["Kateqoriya", "Say"]
-                # Plotly White teması (Açıq rəngli qrafiklər)
-                fig_donut = px.pie(cat_counts, names="Kateqoriya", values="Say", hole=0.5, title="Şöbələr Üzrə Yük", color_discrete_sequence=px.colors.sequential.Pastel)
+                # TƏMİR EDİLMİŞ HİSSƏ: px.colors.qualitative.Pastel
+                fig_donut = px.pie(cat_counts, names="Kateqoriya", values="Say", hole=0.5, title="Şöbələr Üzrə Yük", color_discrete_sequence=px.colors.qualitative.Pastel)
                 fig_donut.update_layout(template="plotly_white")
                 col_chart1.plotly_chart(fig_donut, use_container_width=True)
                 
