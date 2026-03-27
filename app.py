@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU Command Center v7.1 - Soft UI & Fixed Plotly Colors
+# Məqsəd: ASOIU Command Center v8.0 - Live Chat, Pro NLP Engine, Soft UI
 
 import streamlit as st
 import pandas as pd
@@ -25,11 +25,9 @@ except ImportError:
 st.set_page_config(page_title="ASOIU Helpdesk", page_icon="💠", layout="wide")
 st.markdown("""
 <style>
-    /* Yumşaq və Müasir Arxa Fon (Soft Light) */
     .stApp { background-color: #F4F7F6; color: #2D3748; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     h1, h2, h3, p, label, .stMarkdown { color: #2D3748 !important; }
     
-    /* Zərif Pastel Mavi/Bənövşəyi Düymələr */
     button[kind="primary"], button[kind="secondary"], .stButton>button, .stFormSubmitButton>button, div[data-testid="stDownloadButton"]>button { 
         background: linear-gradient(135deg, #84A9FF, #6A82FB) !important; color: #ffffff !important; border-radius: 8px !important; border: none !important;
         padding: 10px 24px !important; font-weight: 600 !important; text-transform: uppercase !important; letter-spacing: 1px !important;
@@ -39,21 +37,15 @@ st.markdown("""
         background: linear-gradient(135deg, #6A82FB, #84A9FF) !important; box-shadow: 0px 4px 15px rgba(106, 130, 251, 0.4) !important; color: white !important; transform: translateY(-1px);
     }
     
-    /* Açıq rəngli, zərif formalar */
     .stTextArea textarea { resize: none !important; border: 1px solid #E2E8F0 !important; border-radius: 8px !important; background-color: #FFFFFF !important; color: #2D3748 !important; font-family: sans-serif !important; box-shadow: inset 0px 1px 3px rgba(0,0,0,0.05); }
     .stTextInput input, .stSelectbox select { border: 1px solid #E2E8F0 !important; border-radius: 8px !important; background-color: #FFFFFF !important; color: #2D3748 !important; box-shadow: inset 0px 1px 3px rgba(0,0,0,0.05); }
     
-    /* Bildiriş qutuları (Soft kölgə ilə) */
     div[data-testid="stAlert"] { background-color: #FFFFFF !important; border-left: 4px solid #6A82FB !important; border-radius: 8px !important; color: #4A5568 !important; box-shadow: 0px 2px 8px rgba(0,0,0,0.04) !important; }
     
-    /* Sekmələr (Tabs) */
     button[data-baseweb="tab"] { font-weight: bold; color: #A0AEC0 !important; }
     button[data-baseweb="tab"][aria-selected="true"] { color: #6A82FB !important; border-bottom: 2px solid #6A82FB !important; }
     
-    /* Metriklər (Gözoxşayan rənglər) */
     div[data-testid="stMetricValue"] { color: #6A82FB !important; font-weight: 700; }
-    
-    /* Yan Panel (Ağ və Təmiz) */
     [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0 !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -65,7 +57,7 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 # ==========================================
-# 2. QARA QUTU (AUDIT LOGS) VƏ DİL
+# 2. FAYLLAR VƏ DİL
 # ==========================================
 LANG = {
     "AZE": {"welcome": "ASOIU İT Dəstək Mərkəzi", "login_tab": "Sistemə Giriş", "signup_tab": "Yeni Qeydiyyat", "user": "İdentifikator (ad_soyad)", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Şifrə Bərpası", "name": "Tam Ad", "signup_btn": "Hesab Yarat", "logout": "Sistemdən Çıx", "new_ticket": "YENİ İNSİDENT", "desc": "Problemin detallı təsviri:", "send": "Təhlil Et və Göndər", "stats": "GÖSTƏRİCİLƏR", "my_tickets": "Mənim İnsidentlərim", "exam": "AGENT İMTAHANI", "admin_panel": "MÜTƏXƏSSİS PANELİ", "solved_by_me": "Bağlanmış İnsidentlər", "open_tickets": "AÇIQ İNSİDENTLƏR (GÖZLƏMƏDƏ)", "mark_solved": "İNSİDENTİ BAĞLA", "download_csv": "☁️ SİSTEM BAZASINI ÇIXAR (CSV)", "accept_ticket": "İCRAYA QƏBUL ET", "my_active": "AKTİV İCRALARIM"}
@@ -77,6 +69,7 @@ t = LANG[sel_lang]
 USERS_FILE = "data/users_db.csv"
 TICKETS_FILE = "data/live_tickets.csv"
 LOGS_FILE = "data/system_logs.csv"
+CHAT_FILE = "data/chat_db.csv" # CANLI DƏSTƏK FAYLI
 
 def add_log(action, username="Sistem"):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -88,9 +81,9 @@ st.sidebar.subheader("📡 Sistem Statusu")
 st.sidebar.markdown("""
 <div style='font-size: 14px; color: #4A5568;'>
     <b>Əsas Server:</b> <span style='color: #38A169;'>🟢 Aktiv</span><br>
-    <b>AI Mühərriki:</b> <span style='color: #3182CE;'>🧠 V6.6 NLP</span><br>
+    <b>AI Mühərriki:</b> <span style='color: #3182CE;'>🧠 PRO NLP v8</span><br>
     <b>Baza Statusu:</b> <span style='color: #38A169;'>💾 Qorunur</span><br>
-    <b>Jurnal (Logs):</b> <span style='color: #D69E2E;'>🔴 Yazılır</span>
+    <b>Canlı Dəstək:</b> <span style='color: #3182CE;'>💬 Aktiv</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -100,16 +93,6 @@ if st.session_state.get('logged_in'):
     st.sidebar.write(f"**İstifadəçi:** {st.session_state.name}")
     st.sidebar.write(f"**Səlahiyyət:** {st.session_state.role.upper()}")
     st.sidebar.write(f"**Bölmə:** {st.session_state.dept}")
-
-if st.sidebar.button("📞 Təcili Dəstək Kanalı"):
-    if os.path.exists(USERS_FILE):
-        users_df = pd.read_csv(USERS_FILE)
-        admins = users_df[users_df['role'].isin(['admin', 'super_admin'])]
-        if not admins.empty:
-            random_admin = admins.sample(1).iloc[0]
-            st.sidebar.success(f"📡 **Dəstək Təyin Olundu:**\n\n👤 {random_admin['name']}\n🏢 {random_admin['dept']}\n📱 +994 50 123 45 67")
-            add_log("Təcili Dəstək düyməsinə basdı", st.session_state.get('username', 'Anonim'))
-        else: st.sidebar.warning("Hazırda aktiv agent tapılmadı.")
 
 def normalize_text(text):
     text = text.lower()
@@ -124,7 +107,7 @@ def normalize_text(text):
     return text.strip()
 
 # ==========================================
-# 3. YÜKSƏK SÜRƏTLİ VECTOR NLP (LinearSVC) - 1M DATA
+# 3. YÜKSƏK SÜRƏTLİ VƏ PEŞƏKAR NLP (Sublinear TF & Balanced SVC)
 # ==========================================
 @st.cache_resource
 def initialize_system():
@@ -162,9 +145,10 @@ def initialize_system():
 
     def train_new_model():
         df = pd.read_csv('data/tickets.csv')
+        # Daha peşəkar ML Modeli (Sublinear TF & Balanced Class Weight & n-gram=1-4)
         pipeline = Pipeline([
-            ('tfidf', TfidfVectorizer(ngram_range=(1, 3), max_features=20000)), 
-            ('clf', LinearSVC(random_state=42, dual="auto")) 
+            ('tfidf', TfidfVectorizer(ngram_range=(1, 4), max_features=25000, sublinear_tf=True)), 
+            ('clf', LinearSVC(C=1.5, class_weight='balanced', random_state=42, dual="auto", max_iter=2000)) 
         ])
         pipeline.fit(df['ticket_text'], df['category'])
         return pipeline
@@ -180,13 +164,13 @@ def initialize_system():
             joblib.dump(model, 'helpdesk_classifier_model.pkl')
             return model
 
-with st.spinner("⚙️ AI Modeli və 1 Milyonluq Baza Yüklənir... Zəhmət olmasa gözləyin."):
+with st.spinner("⚙️ PRO AI Modeli və Baza Yüklənir... Zəhmət olmasa gözləyin."):
     model = initialize_system()
 
 def ensure_db_exists():
     os.makedirs('data', exist_ok=True)
-    if not os.path.exists(LOGS_FILE):
-        pd.DataFrame(columns=["Tarix", "İstifadəçi", "Əməliyyat"]).to_csv(LOGS_FILE, index=False)
+    if not os.path.exists(LOGS_FILE): pd.DataFrame(columns=["Tarix", "İstifadəçi", "Əməliyyat"]).to_csv(LOGS_FILE, index=False)
+    if not os.path.exists(CHAT_FILE): pd.DataFrame(columns=["Tarix", "Göndərən", "Rol", "Mesaj"]).to_csv(CHAT_FILE, index=False) # Yeni Çat Bazası
         
     try:
         u_df = pd.read_csv(USERS_FILE)
@@ -197,7 +181,7 @@ def ensure_db_exists():
             {"username": "orxan_eliyev", "password": hash_password("123"), "role": "admin", "name": "Orxan Əliyev", "dept": "Avadanlıq"},
             {"username": "cavid_memmedov", "password": hash_password("123"), "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"}
         ]).to_csv(USERS_FILE, index=False)
-        add_log("Sistem bazası sıfırlandı və şifrələndi")
+        add_log("Sistem bazası sıfırlandı")
         
     try:
         t_df = pd.read_csv(TICKETS_FILE)
@@ -219,6 +203,32 @@ def smart_ai_autosolve(text):
     elif any(word in text for word in ["donur", "dondu", "kasiyor", "kilitlendi"]): return "🤖 AI Həll Yolu: Sistem donmalarının səbəbi RAM yüklənməsidir. 'Task Manager' açaraq lazımsız proqramları bağlayın."
     elif any(word in text for word in ["virus", "spam", "reklam", "heker", "trojan"]): return "🤖 AI Həll Yolu: DİQQƏT! Lütfən cihazı DƏRHAL şəbəkədən ayırın. Təhlükəsizlik şöbəsi gələnə qədər heç nə taxmayın!"
     return None 
+
+# ==========================================
+# ÇAT SİSTEMİ FUNKSİYASI
+# ==========================================
+def render_live_chat():
+    st.markdown("### 💬 Canlı Dəstək və Təcili Əlaqə")
+    st.info("Bütün istifadəçilər və adminlər üçün ortaq dəstək otağı. Mesajlar avtomatik yenilənir.")
+    
+    chat_df = pd.read_csv(CHAT_FILE)
+    
+    # Son 30 mesajı göstəririk
+    for idx, row in chat_df.tail(30).iterrows():
+        avatar = "🧑‍💻" if row['Rol'] == 'user' else "🛡️"
+        with st.chat_message("user" if row['Rol'] == 'user' else "assistant", avatar=avatar):
+            st.markdown(f"**{row['Göndərən']}** <span style='font-size:10px; color:gray;'>({row['Tarix']})</span>", unsafe_allow_html=True)
+            st.write(row['Mesaj'])
+            
+    if prompt := st.chat_input("Mesajınızı bura yazın və Enter basın..."):
+        new_msg = pd.DataFrame([{
+            "Tarix": datetime.now().strftime("%H:%M:%S"), 
+            "Göndərən": st.session_state.name, 
+            "Rol": st.session_state.role, 
+            "Mesaj": prompt
+        }])
+        new_msg.to_csv(CHAT_FILE, mode='a', header=not os.path.exists(CHAT_FILE), index=False)
+        st.rerun()
 
 # ==========================================
 # 4. GİRİŞ VƏ QEYDİYYAT
@@ -250,7 +260,6 @@ if not st.session_state.logged_in:
                             st.rerun()
                         else: 
                             st.error("❌ Giriş xətası: İdentifikator və ya şifrə səhvdir.")
-                            add_log(f"Uğursuz giriş cəhdi (ID: {login_user})", "Naməlum")
                 if st.button(f"❓ {t['forgot']}", type="primary"):
                     st.session_state.show_forgot_pass = True
                     st.rerun()
@@ -261,15 +270,12 @@ if not st.session_state.logged_in:
                     new_pass = st.text_input(f"{t['pass']}:", type="password")
                     submit_signup = st.form_submit_button(t['signup_btn'], type="primary")
                     if submit_signup:
-                        if len(new_user) < 3 or len(new_pass) < 3:
-                            st.error("⚠️ Məlumatlar çox qısadır.")
+                        if len(new_user) < 3 or len(new_pass) < 3: st.error("⚠️ Məlumatlar çox qısadır.")
                         else:
                             users_df = pd.read_csv(USERS_FILE)
-                            if new_user in users_df['username'].values:
-                                st.error("⚠️ Bu istifadəçi adı artıq mövcuddur.")
+                            if new_user in users_df['username'].values: st.error("⚠️ Bu istifadəçi adı artıq mövcuddur.")
                             else:
                                 pd.DataFrame([{"username": new_user, "password": hash_password(new_pass), "role": "user", "name": new_name, "dept": "Yoxdur"}]).to_csv(USERS_FILE, mode='a', header=False, index=False)
-                                add_log("Yeni hesab yaradıldı", new_user)
                                 st.success("✅ Hesab yaradıldı! Daxil ola bilərsiniz.")
         else:
             with st.form("reset_pass_form"):
@@ -284,7 +290,6 @@ if not st.session_state.logged_in:
                     if reset_user in df['username'].values:
                         df.loc[df['username'] == reset_user, 'password'] = hash_password(new_pass)
                         df.to_csv(USERS_FILE, index=False)
-                        add_log("Şifrəni sıfırladı", reset_user)
                         st.success("✅ Şifrə uğurla yeniləndi.")
                     else: st.error("İstifadəçi tapılmadı.")
                 if back_btn:
@@ -297,16 +302,11 @@ if not st.session_state.logged_in:
 else:
     if st.session_state.role in ["admin", "super_admin"] and st_autorefresh:
         st_autorefresh(interval=2000, key="admin_refresh")
+    elif st.session_state.role == "user" and st_autorefresh:
+        st_autorefresh(interval=2000, key="user_refresh") # Çat üçün user-də də autorefresh
 
     tickets_df = pd.read_csv(TICKETS_FILE)
     tickets_df = tickets_df.sort_values(by="Tarix", ascending=False).reset_index(drop=True)
-
-    if st.session_state.role in ["admin", "super_admin"]:
-        if 'last_ticket_count' not in st.session_state: st.session_state.last_ticket_count = len(tickets_df)
-        elif len(tickets_df) > st.session_state.last_ticket_count:
-            st.toast("🔔 Yeni İnsident Qeydə Alındı!", icon="🔔")
-            play_notification_sound()
-            st.session_state.last_ticket_count = len(tickets_df)
 
     colA, colB = st.columns([4, 1])
     with colA: st.markdown(f"<h3 style='color: #4A5568 !important;'>👋 Xoş Gəldiniz, {st.session_state.name}</h3>", unsafe_allow_html=True)
@@ -319,7 +319,9 @@ else:
 
     # --- USER PANELİ ---
     if st.session_state.role == "user":
-        tab_new, tab_exam = st.tabs([f"✍️ {t['new_ticket']}", f"🎯 {t['exam']}"])
+        # YENİ TAB: Çat əlavə olundu
+        tab_new, tab_chat, tab_exam = st.tabs(["✍️ Yeni Sorğu", "💬 Canlı Dəstək", "🎯 İmtahan"])
+        
         with tab_new:
             col_main, col_stat = st.columns([3, 1])
             with col_main:
@@ -345,23 +347,19 @@ else:
                                 
                             priority = get_priority(pred_category)
                             ticket_id = f"TKT-{random.randint(10000, 99999)}"
-                            
                             agent_mapping = {"Şəbəkə": "Şəbəkə Şöbəsi", "Avadanlıq": "Texniki Dəstək", "Hesab_Problemi": "Hesab Qeydiyyatı", "Proqram_Təminatı": "Proqram Təminatı", "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi", "Məlumat_Bazası": "Baza Administratoru"}
                             assigned_dept = agent_mapping.get(pred_category, "Ümumi Şöbə")
-                            
                             ai_reply = smart_ai_autosolve(user_input)
                             
                             if ai_reply:
                                 new_t = pd.DataFrame([{"Ticket_ID": ticket_id, "Tarix": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Prioritet": priority, "Məsul_Şəxs": "AI 🤖", "Status": "Həll edildi"}])
                                 new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                                add_log(f"İnsident yaratdı və AI həll etdi ({ticket_id})", st.session_state.username)
                                 st.success(f"⚡ İnsident {ticket_id} | Şöbə: {pred_category} | Prioritet: {priority}")
                                 st.info(ai_reply)
                             else:
                                 new_t = pd.DataFrame([{"Ticket_ID": ticket_id, "Tarix": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Prioritet": priority, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq"}])
                                 new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                                add_log(f"İnsident yaratdı ({ticket_id})", st.session_state.username)
-                                st.success(f"✅ İnsident {ticket_id} Qeydə Alındı. Şöbə: {assigned_dept} | Prioritet: {priority}")
+                                st.success(f"✅ İnsident {ticket_id} Qeydə Alındı. Şöbə: {assigned_dept}")
 
             with col_stat:
                 my_count = len(tickets_df[tickets_df['Göndərən'] == st.session_state.username])
@@ -373,6 +371,9 @@ else:
                         if row['Status'] == 'Açıq': st.warning(f"{row['Ticket_ID']}: 🕒 Gözləyir")
                         elif row['Status'] == 'İcrada': st.info(f"{row['Ticket_ID']}: 🛠️ İcrada")
                         else: st.success(f"{row['Ticket_ID']}: ✅ Həll Edildi")
+        
+        with tab_chat:
+            render_live_chat()
 
         with tab_exam:
             st.write("### İT Mütəxəssis İmtahanı")
@@ -380,67 +381,67 @@ else:
                 q1 = st.radio("1. IP münaqişəsi nədir?", ["Bilinmir", "İki cihazın eyni IP-yə malik olması", "Kabel qırılması"])
                 q2 = st.radio("2. RAM nə işə yarayır?", ["Şəkil çəkir", "Müvəqqəti yaddaş təmin edir", "İnternet verir"])
                 q3 = st.radio("3. BSOD nədir?", ["Sistem donması", "Səhv parol", "Toz"])
-                q4 = st.radio("4. 'Ping' nə üçündür?", ["Şəbəkə əlaqəsini yoxlamaq", "Virus silmək", "Oyun açmaq"])
-                q5 = st.radio("5. VPN nədir?", ["Virtual Private Network", "Virus Protection", "Video Player"])
                 submit_exam = st.form_submit_button("TƏSDİQLƏ", type="primary")
                 if submit_exam:
-                    score = sum([q1=="İki cihazın eyni IP-yə malik olması", q2=="Müvəqqəti yaddaş təmin edir", q3=="Sistem donması", q4=="Şəbəkə əlaqəsini yoxlamaq", q5=="Virtual Private Network"])
-                    if score == 5:
+                    score = sum([q1=="İki cihazın eyni IP-yə malik olması", q2=="Müvəqqəti yaddaş təmin edir", q3=="Sistem donması"])
+                    if score == 3:
                         users_df = pd.read_csv(USERS_FILE)
                         users_df.loc[users_df['username'] == st.session_state.username, ['role', 'dept']] = ['admin', 'Ümumi_Dəstək']
                         users_df.to_csv(USERS_FILE, index=False)
-                        add_log("İmtahandan keçdi və Admin oldu", st.session_state.username)
                         st.success("🎉 Təbriklər! Siz artıq Adminsiniz. Təkrar daxil olun.")
                     else: st.error("Təəssüf ki, imtahandan kəsildiniz.")
 
     # --- ADMIN PANELİ ---
     elif st.session_state.role == "admin":
-        col_main, col_stat = st.columns([3, 1])
-        with col_main:
-            st.write(f"### 📬 {t['open_tickets']}")
-            open_tickets = tickets_df[(tickets_df["Kateqoriya"] == st.session_state.dept) & (tickets_df["Status"] == "Açıq")]
-            
-            def color_priority(val):
-                # Yumşaq rənglər: Pastel Qırmızı, Narıncı, Yaşıl
-                color = '#E53E3E' if val == '🔴 Kritik' else '#DD6B20' if val == '🟡 Yüksək' else '#38A169'
-                return f'color: {color}; font-weight: bold'
-            
-            if not open_tickets.empty:
-                st.dataframe(open_tickets[['Ticket_ID', 'Tarix', 'Göndərən', 'Prioritet', 'Şikayət']].style.map(color_priority, subset=['Prioritet']), use_container_width=True, hide_index=True)
-                with st.form("accept_ticket_form"):
-                    accept_id = st.selectbox("İcraya Götürüləcək İnsident:", open_tickets['Ticket_ID'].tolist())
-                    submit_accept = st.form_submit_button(t['accept_ticket'], type="primary")
-                    if submit_accept:
-                        original_df = pd.read_csv(TICKETS_FILE)
-                        real_idx = original_df[original_df['Ticket_ID'] == accept_id].index[0]
-                        original_df.loc[real_idx, "Status"] = "İcrada"
-                        original_df.loc[real_idx, "Məsul_Şəxs"] = st.session_state.username
-                        original_df.to_csv(TICKETS_FILE, index=False)
-                        add_log(f"İnsidenti icraya götürdü ({accept_id})", st.session_state.username)
-                        st.success(f"✅ {accept_id} İCRAYA GÖTÜRÜLDÜ!")
-                        st.rerun()
-            else: st.info("Sistem təmizdir. Gözləyən insident yoxdur.")
-            
-            st.markdown("---")
-            st.write(f"### ⏳ {t['my_active']}")
-            active_tickets = tickets_df[(tickets_df["Məsul_Şəxs"] == st.session_state.username) & (tickets_df["Status"] == "İcrada")]
-            if not active_tickets.empty:
-                st.dataframe(active_tickets[['Ticket_ID', 'Tarix', 'Prioritet', 'Şikayət']].style.map(color_priority, subset=['Prioritet']), use_container_width=True, hide_index=True)
-                with st.form("close_ticket_form"):
-                    close_id = st.selectbox("Bağlanacaq İnsident:", active_tickets['Ticket_ID'].tolist())
-                    submit_close = st.form_submit_button(t['mark_solved'], type="primary")
-                    if submit_close:
-                        original_df = pd.read_csv(TICKETS_FILE)
-                        real_idx = original_df[original_df['Ticket_ID'] == close_id].index[0]
-                        original_df.loc[real_idx, "Status"] = "Həll edildi"
-                        original_df.to_csv(TICKETS_FILE, index=False)
-                        add_log(f"İnsidenti uğurla bağladı ({close_id})", st.session_state.username)
-                        st.success(f"✅ {close_id} UĞURLA BAĞLANDI!")
-                        st.rerun() 
-            else: st.info("Aktiv icra yoxdur.")
-        with col_stat:
-            solved_count = len(tickets_df[(tickets_df['Məsul_Şəxs'] == st.session_state.username) & (tickets_df['Status'] == 'Həll edildi')])
-            st.info(f"📈 **Məhsuldarlıq**\n\nBağlanmış İş: **{solved_count}**")
+        tab_work, tab_chat = st.tabs(["🛠️ İdarəetmə Paneli", "💬 Canlı Dəstək"])
+        
+        with tab_work:
+            col_main, col_stat = st.columns([3, 1])
+            with col_main:
+                st.write(f"### 📬 {t['open_tickets']}")
+                open_tickets = tickets_df[(tickets_df["Kateqoriya"] == st.session_state.dept) & (tickets_df["Status"] == "Açıq")]
+                
+                def color_priority(val):
+                    color = '#E53E3E' if val == '🔴 Kritik' else '#DD6B20' if val == '🟡 Yüksək' else '#38A169'
+                    return f'color: {color}; font-weight: bold'
+                
+                if not open_tickets.empty:
+                    st.dataframe(open_tickets[['Ticket_ID', 'Tarix', 'Göndərən', 'Prioritet', 'Şikayət']].style.map(color_priority, subset=['Prioritet']), use_container_width=True, hide_index=True)
+                    with st.form("accept_ticket_form"):
+                        accept_id = st.selectbox("İcraya Götürüləcək İnsident:", open_tickets['Ticket_ID'].tolist())
+                        submit_accept = st.form_submit_button(t['accept_ticket'], type="primary")
+                        if submit_accept:
+                            original_df = pd.read_csv(TICKETS_FILE)
+                            real_idx = original_df[original_df['Ticket_ID'] == accept_id].index[0]
+                            original_df.loc[real_idx, "Status"] = "İcrada"
+                            original_df.loc[real_idx, "Məsul_Şəxs"] = st.session_state.username
+                            original_df.to_csv(TICKETS_FILE, index=False)
+                            st.success(f"✅ {accept_id} İCRAYA GÖTÜRÜLDÜ!")
+                            st.rerun()
+                else: st.info("Sistem təmizdir. Gözləyən insident yoxdur.")
+                
+                st.markdown("---")
+                st.write(f"### ⏳ {t['my_active']}")
+                active_tickets = tickets_df[(tickets_df["Məsul_Şəxs"] == st.session_state.username) & (tickets_df["Status"] == "İcrada")]
+                if not active_tickets.empty:
+                    st.dataframe(active_tickets[['Ticket_ID', 'Tarix', 'Prioritet', 'Şikayət']].style.map(color_priority, subset=['Prioritet']), use_container_width=True, hide_index=True)
+                    with st.form("close_ticket_form"):
+                        close_id = st.selectbox("Bağlanacaq İnsident:", active_tickets['Ticket_ID'].tolist())
+                        submit_close = st.form_submit_button(t['mark_solved'], type="primary")
+                        if submit_close:
+                            original_df = pd.read_csv(TICKETS_FILE)
+                            real_idx = original_df[original_df['Ticket_ID'] == close_id].index[0]
+                            original_df.loc[real_idx, "Status"] = "Həll edildi"
+                            original_df.to_csv(TICKETS_FILE, index=False)
+                            st.success(f"✅ {close_id} UĞURLA BAĞLANDI!")
+                            st.rerun() 
+                else: st.info("Aktiv icra yoxdur.")
+            with col_stat:
+                solved_count = len(tickets_df[(tickets_df['Məsul_Şəxs'] == st.session_state.username) & (tickets_df['Status'] == 'Həll edildi')])
+                st.info(f"📈 **Məhsuldarlıq**\n\nBağlanmış İş: **{solved_count}**")
+
+        with tab_chat:
+            render_live_chat()
 
     # --- SUPER ADMIN PANELİ ---
     elif st.session_state.role == "super_admin":
@@ -452,14 +453,14 @@ else:
             st.download_button(label=t['download_csv'], data=csv_data, file_name=f"CORE_DATA_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", mime="text/csv", type="primary")
         st.markdown("---")
         
-        tab_dash, tab_users, tab_logs = st.tabs(["📊 Analitika", "👥 İstifadəçilər", "🕵️ Sistem Jurnalı"])
+        # ÇAT SEKMSƏSİ ƏLAVƏ EDİLDİ
+        tab_dash, tab_users, tab_chat, tab_logs = st.tabs(["📊 Analitika", "👥 Hesablar", "💬 Qlobal Çat", "🕵️ Sistem Jurnalı"])
         
         with tab_dash:
             if not tickets_df.empty:
                 col_chart1, col_chart2 = st.columns(2)
                 cat_counts = tickets_df["Kateqoriya"].value_counts().reset_index()
                 cat_counts.columns = ["Kateqoriya", "Say"]
-                # TƏMİR EDİLMİŞ HİSSƏ: px.colors.qualitative.Pastel
                 fig_donut = px.pie(cat_counts, names="Kateqoriya", values="Say", hole=0.5, title="Şöbələr Üzrə Yük", color_discrete_sequence=px.colors.qualitative.Pastel)
                 fig_donut.update_layout(template="plotly_white")
                 col_chart1.plotly_chart(fig_donut, use_container_width=True)
@@ -489,10 +490,22 @@ else:
                         st.dataframe(filtered_df.drop(columns=['Tarix_Gun'], errors='ignore').style.map(color_priority, subset=['Prioritet']), use_container_width=True, hide_index=True)
         
         with tab_users:
-            st.write("### Hesablar Bazası")
+            st.write("### 👥 Sistem İdentifikatorları (Hesablar)")
             users_db = pd.read_csv(USERS_FILE)
             safe_users_db = users_db.drop(columns=['password'])
-            st.dataframe(safe_users_db, use_container_width=True, hide_index=True)
+            
+            st.markdown("#### 👨‍💻 İdarəçi Heyət (Admin / Super Admin)")
+            staff_df = safe_users_db[safe_users_db['role'].isin(['admin', 'super_admin'])].reset_index(drop=True)
+            st.dataframe(staff_df, use_container_width=True, hide_index=True)
+            
+            st.markdown("---")
+            st.markdown("#### 👤 Adi İstifadəçilər (Tələbə / İşçi)")
+            users_only_df = safe_users_db[safe_users_db['role'] == 'user'].reset_index(drop=True)
+            if not users_only_df.empty: st.dataframe(users_only_df, use_container_width=True, hide_index=True)
+            else: st.info("Sistemdə hələ heç bir adi istifadəçi (user) yoxdur.")
+
+        with tab_chat:
+            render_live_chat()
             
         with tab_logs:
             st.write("### 🕵️ Audit Jurnalı (Logs)")
