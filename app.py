@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU Command Center v8.0 - Live Chat, Pro NLP Engine, Soft UI
+# Məqsəd: ASOIU Command Center v8.1 - Live Chat, Pro NLP Engine, Soft UI & Multilingual
 
 import streamlit as st
 import pandas as pd
@@ -57,19 +57,24 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 # ==========================================
-# 2. FAYLLAR VƏ DİL
+# 2. ÇOXDİLLİ LÜĞƏT VƏ YAN PANEL
 # ==========================================
 LANG = {
-    "AZE": {"welcome": "ASOIU İT Dəstək Mərkəzi", "login_tab": "Sistemə Giriş", "signup_tab": "Yeni Qeydiyyat", "user": "İdentifikator (ad_soyad)", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Şifrə Bərpası", "name": "Tam Ad", "signup_btn": "Hesab Yarat", "logout": "Sistemdən Çıx", "new_ticket": "YENİ İNSİDENT", "desc": "Problemin detallı təsviri:", "send": "Təhlil Et və Göndər", "stats": "GÖSTƏRİCİLƏR", "my_tickets": "Mənim İnsidentlərim", "exam": "AGENT İMTAHANI", "admin_panel": "MÜTƏXƏSSİS PANELİ", "solved_by_me": "Bağlanmış İnsidentlər", "open_tickets": "AÇIQ İNSİDENTLƏR (GÖZLƏMƏDƏ)", "mark_solved": "İNSİDENTİ BAĞLA", "download_csv": "☁️ SİSTEM BAZASINI ÇIXAR (CSV)", "accept_ticket": "İCRAYA QƏBUL ET", "my_active": "AKTİV İCRALARIM"}
+    "AZE": {"welcome": "ASOIU İT Dəstək Mərkəzi", "login_tab": "Sistemə Giriş", "signup_tab": "Yeni Qeydiyyat", "user": "İdentifikator (ad_soyad)", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Şifrə Bərpası", "name": "Tam Ad", "signup_btn": "Hesab Yarat", "logout": "Sistemdən Çıx", "new_ticket": "YENİ İNSİDENT", "desc": "Problemin detallı təsviri:", "send": "Təhlil Et və Göndər", "stats": "GÖSTƏRİCİLƏR", "my_tickets": "Mənim İnsidentlərim", "exam": "AGENT İMTAHANI", "admin_panel": "MÜTƏXƏSSİS PANELİ", "solved_by_me": "Bağlanmış İnsidentlər", "open_tickets": "AÇIQ İNSİDENTLƏR (GÖZLƏMƏDƏ)", "mark_solved": "İNSİDENTİ BAĞLA", "download_csv": "☁️ SİSTEM BAZASINI ÇIXAR (CSV)", "accept_ticket": "İCRAYA QƏBUL ET", "my_active": "AKTİV İCRALARIM"},
+    "ENG": {"welcome": "ASOIU IT Support Center", "login_tab": "System Login", "signup_tab": "New Registration", "user": "Identifier (name_surname)", "pass": "Password", "login_btn": "Log In", "forgot": "Password Reset", "name": "Full Name", "signup_btn": "Create Account", "logout": "Log Out", "new_ticket": "NEW INCIDENT", "desc": "Detailed description of the problem:", "send": "Analyze & Submit", "stats": "METRICS", "my_tickets": "My Incidents", "exam": "AGENT EXAM", "admin_panel": "EXPERT PANEL", "solved_by_me": "Closed Incidents", "open_tickets": "OPEN INCIDENTS (PENDING)", "mark_solved": "CLOSE INCIDENT", "download_csv": "☁️ EXPORT DB (CSV)", "accept_ticket": "ACCEPT TASK", "my_active": "MY ACTIVE TASKS"},
+    "RUS": {"welcome": "Центр ИТ-поддержки ASOIU", "login_tab": "Вход в систему", "signup_tab": "Регистрация", "user": "Идентификатор (имя_фамилия)", "pass": "Пароль", "login_btn": "Войти", "forgot": "Сброс пароля", "name": "Полное имя", "signup_btn": "Создать аккаунт", "logout": "Выйти", "new_ticket": "НОВЫЙ ИНЦИДЕНТ", "desc": "Подробное описание проблемы:", "send": "Анализировать и отправить", "stats": "ПОКАЗАТЕЛИ", "my_tickets": "Мои инциденты", "exam": "ЭКЗАМЕН АГЕНТА", "admin_panel": "ПАНЕЛЬ ЭКСПЕРТА", "solved_by_me": "Закрытые инциденты", "open_tickets": "ОТКРЫТЫЕ ИНЦИДЕНТЫ (В ОЖИДАНИИ)", "mark_solved": "ЗАКРЫТЬ ИНЦИДЕНТ", "download_csv": "☁️ ЭКСПОРТ БАЗЫ (CSV)", "accept_ticket": "ПРИНЯТЬ ЗАДАЧУ", "my_active": "МОИ АКТИВНЫЕ ЗАДАЧИ"},
+    "TR": {"welcome": "ASOIU BT Destek Merkezi", "login_tab": "Sisteme Giriş", "signup_tab": "Yeni Kayıt", "user": "Kimlik (ad_soyad)", "pass": "Şifre", "login_btn": "Giriş Yap", "forgot": "Şifre Sıfırlama", "name": "Tam Ad", "signup_btn": "Hesap Oluştur", "logout": "Çıkış Yap", "new_ticket": "YENİ İNSİDENT", "desc": "Problemin detaylı açıklaması:", "send": "Analiz Et ve Gönder", "stats": "GÖSTERGELER", "my_tickets": "Benim İnsidentlerim", "exam": "AJAN SINAVI", "admin_panel": "UZMAN PANELİ", "solved_by_me": "Kapatılan İnsidentler", "open_tickets": "AÇIK İNSİDENTLER (BEKLEMEDE)", "mark_solved": "İNSİDENTİ KAPAT", "download_csv": "☁️ SİSTEM VERİSİNİ İNDİR (CSV)", "accept_ticket": "GÖREVİ KABUL ET", "my_active": "AKTİF GÖREVLERİM"}
 }
-st.sidebar.title("🌐 ASOIU Helpdesk")
-sel_lang = st.sidebar.radio("", ["AZE"], horizontal=True, label_visibility="collapsed")
+
+st.sidebar.title("🌐 Language / Dil")
+# Bütün dillər bərpa edildi və istənilən vaxt dəyişdirilə bilər
+sel_lang = st.sidebar.radio("", ["AZE", "ENG", "RUS", "TR"], horizontal=True, label_visibility="collapsed")
 t = LANG[sel_lang]
 
 USERS_FILE = "data/users_db.csv"
 TICKETS_FILE = "data/live_tickets.csv"
 LOGS_FILE = "data/system_logs.csv"
-CHAT_FILE = "data/chat_db.csv" # CANLI DƏSTƏK FAYLI
+CHAT_FILE = "data/chat_db.csv" 
 
 def add_log(action, username="Sistem"):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -77,22 +82,22 @@ def add_log(action, username="Sistem"):
     log_df.to_csv(LOGS_FILE, mode='a', header=not os.path.exists(LOGS_FILE), index=False)
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("📡 Sistem Statusu")
+st.sidebar.subheader("📡 System Status")
 st.sidebar.markdown("""
 <div style='font-size: 14px; color: #4A5568;'>
-    <b>Əsas Server:</b> <span style='color: #38A169;'>🟢 Aktiv</span><br>
-    <b>AI Mühərriki:</b> <span style='color: #3182CE;'>🧠 PRO NLP v8</span><br>
-    <b>Baza Statusu:</b> <span style='color: #38A169;'>💾 Qorunur</span><br>
-    <b>Canlı Dəstək:</b> <span style='color: #3182CE;'>💬 Aktiv</span>
+    <b>Main Server:</b> <span style='color: #38A169;'>🟢 Online</span><br>
+    <b>AI Engine:</b> <span style='color: #3182CE;'>🧠 PRO NLP v8</span><br>
+    <b>Database:</b> <span style='color: #38A169;'>💾 Secured</span><br>
+    <b>Live Chat:</b> <span style='color: #3182CE;'>💬 Active</span>
 </div>
 """, unsafe_allow_html=True)
 
 if st.session_state.get('logged_in'):
     st.sidebar.markdown("---")
-    st.sidebar.subheader("👤 Profilim")
-    st.sidebar.write(f"**İstifadəçi:** {st.session_state.name}")
-    st.sidebar.write(f"**Səlahiyyət:** {st.session_state.role.upper()}")
-    st.sidebar.write(f"**Bölmə:** {st.session_state.dept}")
+    st.sidebar.subheader("👤 Profile")
+    st.sidebar.write(f"**ID:** {st.session_state.name}")
+    st.sidebar.write(f"**Role:** {st.session_state.role.upper()}")
+    st.sidebar.write(f"**Dept:** {st.session_state.dept}")
 
 def normalize_text(text):
     text = text.lower()
@@ -107,7 +112,7 @@ def normalize_text(text):
     return text.strip()
 
 # ==========================================
-# 3. YÜKSƏK SÜRƏTLİ VƏ PEŞƏKAR NLP (Sublinear TF & Balanced SVC)
+# 3. YÜKSƏK SÜRƏTLİ VƏ PEŞƏKAR NLP
 # ==========================================
 @st.cache_resource
 def initialize_system():
@@ -145,7 +150,6 @@ def initialize_system():
 
     def train_new_model():
         df = pd.read_csv('data/tickets.csv')
-        # Daha peşəkar ML Modeli (Sublinear TF & Balanced Class Weight & n-gram=1-4)
         pipeline = Pipeline([
             ('tfidf', TfidfVectorizer(ngram_range=(1, 4), max_features=25000, sublinear_tf=True)), 
             ('clf', LinearSVC(C=1.5, class_weight='balanced', random_state=42, dual="auto", max_iter=2000)) 
@@ -164,13 +168,13 @@ def initialize_system():
             joblib.dump(model, 'helpdesk_classifier_model.pkl')
             return model
 
-with st.spinner("⚙️ PRO AI Modeli və Baza Yüklənir... Zəhmət olmasa gözləyin."):
+with st.spinner("⚙️ AI Modeli və Baza Yüklənir... Zəhmət olmasa gözləyin."):
     model = initialize_system()
 
 def ensure_db_exists():
     os.makedirs('data', exist_ok=True)
     if not os.path.exists(LOGS_FILE): pd.DataFrame(columns=["Tarix", "İstifadəçi", "Əməliyyat"]).to_csv(LOGS_FILE, index=False)
-    if not os.path.exists(CHAT_FILE): pd.DataFrame(columns=["Tarix", "Göndərən", "Rol", "Mesaj"]).to_csv(CHAT_FILE, index=False) # Yeni Çat Bazası
+    if not os.path.exists(CHAT_FILE): pd.DataFrame(columns=["Tarix", "Göndərən", "Rol", "Mesaj"]).to_csv(CHAT_FILE, index=False)
         
     try:
         u_df = pd.read_csv(USERS_FILE)
@@ -208,12 +212,11 @@ def smart_ai_autosolve(text):
 # ÇAT SİSTEMİ FUNKSİYASI
 # ==========================================
 def render_live_chat():
-    st.markdown("### 💬 Canlı Dəstək və Təcili Əlaqə")
+    st.markdown("### 💬 Canlı Dəstək / Live Chat")
     st.info("Bütün istifadəçilər və adminlər üçün ortaq dəstək otağı. Mesajlar avtomatik yenilənir.")
     
     chat_df = pd.read_csv(CHAT_FILE)
     
-    # Son 30 mesajı göstəririk
     for idx, row in chat_df.tail(30).iterrows():
         avatar = "🧑‍💻" if row['Rol'] == 'user' else "🛡️"
         with st.chat_message("user" if row['Rol'] == 'user' else "assistant", avatar=avatar):
@@ -303,7 +306,7 @@ else:
     if st.session_state.role in ["admin", "super_admin"] and st_autorefresh:
         st_autorefresh(interval=2000, key="admin_refresh")
     elif st.session_state.role == "user" and st_autorefresh:
-        st_autorefresh(interval=2000, key="user_refresh") # Çat üçün user-də də autorefresh
+        st_autorefresh(interval=2000, key="user_refresh") 
 
     tickets_df = pd.read_csv(TICKETS_FILE)
     tickets_df = tickets_df.sort_values(by="Tarix", ascending=False).reset_index(drop=True)
@@ -311,7 +314,7 @@ else:
     colA, colB = st.columns([4, 1])
     with colA: st.markdown(f"<h3 style='color: #4A5568 !important;'>👋 Xoş Gəldiniz, {st.session_state.name}</h3>", unsafe_allow_html=True)
     with colB:
-        if st.button(f"🚪 Çıxış Et", type="primary"):
+        if st.button(f"🚪 {t['logout']}", type="primary"):
             add_log("Sistemdən çıxış etdi", st.session_state.username)
             st.session_state.logged_in = False
             st.rerun()
@@ -319,8 +322,7 @@ else:
 
     # --- USER PANELİ ---
     if st.session_state.role == "user":
-        # YENİ TAB: Çat əlavə olundu
-        tab_new, tab_chat, tab_exam = st.tabs(["✍️ Yeni Sorğu", "💬 Canlı Dəstək", "🎯 İmtahan"])
+        tab_new, tab_chat, tab_exam = st.tabs([f"✍️ {t['new_ticket']}", "💬 Canlı Dəstək", f"🎯 {t['exam']}"])
         
         with tab_new:
             col_main, col_stat = st.columns([3, 1])
@@ -335,7 +337,6 @@ else:
                         else:
                             clean_input = normalize_text(user_input)
                             
-                            # HIBRID NLP MƏNTİQİ
                             if any(w in clean_input for w in ["virus", "heker", "spam", "trojan", "reklam", "sifrelenib"]): pred_category = "Təhlükəsizlik"
                             elif any(w in clean_input for w in ["baza", "sql", "server", "1c", "oracle", "db"]): pred_category = "Məlumat_Bazası"
                             elif any(w in clean_input for w in ["sebeke", "internet", "wi-fi", "wifi", "lan", "kabel", "ping"]): pred_category = "Şəbəkə"
@@ -393,7 +394,7 @@ else:
 
     # --- ADMIN PANELİ ---
     elif st.session_state.role == "admin":
-        tab_work, tab_chat = st.tabs(["🛠️ İdarəetmə Paneli", "💬 Canlı Dəstək"])
+        tab_work, tab_chat = st.tabs([f"🛠️ {t['admin_panel']}", "💬 Canlı Dəstək"])
         
         with tab_work:
             col_main, col_stat = st.columns([3, 1])
@@ -453,7 +454,6 @@ else:
             st.download_button(label=t['download_csv'], data=csv_data, file_name=f"CORE_DATA_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", mime="text/csv", type="primary")
         st.markdown("---")
         
-        # ÇAT SEKMSƏSİ ƏLAVƏ EDİLDİ
         tab_dash, tab_users, tab_chat, tab_logs = st.tabs(["📊 Analitika", "👥 Hesablar", "💬 Qlobal Çat", "🕵️ Sistem Jurnalı"])
         
         with tab_dash:
