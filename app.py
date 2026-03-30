@@ -1,6 +1,6 @@
 # Müəllif: Kamran Muradov
 # Fayl: app.py
-# Məqsəd: ASOIU Command Center v9.0 - Calibrated AI with Confidence Score
+# Məqsəd: ASOIU Command Center v8.2 - Live Chat, Pro NLP Engine, Soft UI & User Management
 
 import streamlit as st
 import pandas as pd
@@ -12,7 +12,6 @@ from datetime import datetime
 from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC
-from sklearn.calibration import CalibratedClassifierCV
 import plotly.express as px
 
 try:
@@ -58,10 +57,14 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 LANG = {
-    "AZE": {"welcome": "ASOIU İT Dəstək Mərkəzi", "login_tab": "Sistemə Giriş", "signup_tab": "Yeni Qeydiyyat", "user": "İdentifikator (ad_soyad)", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Şifrə Bərpası", "name": "Tam Ad", "signup_btn": "Hesab Yarat", "logout": "Sistemdən Çıx", "new_ticket": "YENİ İNSİDENT", "desc": "Problemin detallı təsviri:", "send": "Təhlil Et və Göndər", "stats": "GÖSTƏRİCİLƏR", "my_tickets": "Mənim İnsidentlərim", "exam": "AGENT İMTAHANI", "admin_panel": "MÜTƏXƏSSİS PANELİ", "solved_by_me": "Bağlanmış İnsidentlər", "open_tickets": "AÇIQ İNSİDENTLƏR (GÖZLƏMƏDƏ)", "mark_solved": "İNSİDENTİ BAĞLA", "download_csv": "☁️ SİSTEM BAZASINI ÇIXAR (CSV)", "accept_ticket": "İCRAYA QƏBUL ET", "my_active": "AKTİV İCRALARIM"}
+    "AZE": {"welcome": "ASOIU İT Dəstək Mərkəzi", "login_tab": "Sistemə Giriş", "signup_tab": "Yeni Qeydiyyat", "user": "İdentifikator (ad_soyad)", "pass": "Şifrə", "login_btn": "Daxil Ol", "forgot": "Şifrə Bərpası", "name": "Tam Ad", "signup_btn": "Hesab Yarat", "logout": "Sistemdən Çıx", "new_ticket": "YENİ İNSİDENT", "desc": "Problemin detallı təsviri:", "send": "Təhlil Et və Göndər", "stats": "GÖSTƏRİCİLƏR", "my_tickets": "Mənim İnsidentlərim", "exam": "AGENT İMTAHANI", "admin_panel": "MÜTƏXƏSSİS PANELİ", "solved_by_me": "Bağlanmış İnsidentlər", "open_tickets": "AÇIQ İNSİDENTLƏR (GÖZLƏMƏDƏ)", "mark_solved": "İNSİDENTİ BAĞLA", "download_csv": "☁️ SİSTEM BAZASINI ÇIXAR (CSV)", "accept_ticket": "İCRAYA QƏBUL ET", "my_active": "AKTİV İCRALARIM"},
+    "ENG": {"welcome": "ASOIU IT Support Center", "login_tab": "System Login", "signup_tab": "New Registration", "user": "Identifier (name_surname)", "pass": "Password", "login_btn": "Log In", "forgot": "Password Reset", "name": "Full Name", "signup_btn": "Create Account", "logout": "Log Out", "new_ticket": "NEW INCIDENT", "desc": "Detailed description of the problem:", "send": "Analyze & Submit", "stats": "METRICS", "my_tickets": "My Incidents", "exam": "AGENT EXAM", "admin_panel": "EXPERT PANEL", "solved_by_me": "Closed Incidents", "open_tickets": "OPEN INCIDENTS (PENDING)", "mark_solved": "CLOSE INCIDENT", "download_csv": "☁️ EXPORT DB (CSV)", "accept_ticket": "ACCEPT TASK", "my_active": "MY ACTIVE TASKS"},
+    "RUS": {"welcome": "Центр ИТ-поддержки ASOIU", "login_tab": "Вход в систему", "signup_tab": "Регистрация", "user": "Идентификатор (имя_фамилия)", "pass": "Пароль", "login_btn": "Войти", "forgot": "Сброс пароля", "name": "Полное имя", "signup_btn": "Создать аккаунт", "logout": "Выйти", "new_ticket": "НОВЫЙ ИНЦИДЕНТ", "desc": "Подробное описание проблемы:", "send": "Анализировать и отправить", "stats": "ПОКАЗАТЕЛИ", "my_tickets": "Мои инциденты", "exam": "ЭКЗАМЕН АГЕНТА", "admin_panel": "ПАНЕЛЬ ЭКСПЕРТА", "solved_by_me": "Закрытые инциденты", "open_tickets": "ОТКРЫТЫЕ ИНЦИДЕНТЫ (В ОЖИДАНИИ)", "mark_solved": "ЗАКРЫТЬ ИНЦИДЕНТ", "download_csv": "☁️ ЭКСПОРТ БАЗЫ (CSV)", "accept_ticket": "ПРИНЯТЬ ЗАДАЧУ", "my_active": "МОИ АКТИВНЫЕ ЗАДАЧИ"},
+    "TR": {"welcome": "ASOIU BT Destek Merkezi", "login_tab": "Sisteme Giriş", "signup_tab": "Yeni Kayıt", "user": "Kimlik (ad_soyad)", "pass": "Şifre", "login_btn": "Giriş Yap", "forgot": "Şifre Sıfırlama", "name": "Tam Ad", "signup_btn": "Hesap Oluştur", "logout": "Çıkış Yap", "new_ticket": "YENİ İNSİDENT", "desc": "Problemin detaylı açıklaması:", "send": "Analiz Et ve Gönder", "stats": "GÖSTERGELER", "my_tickets": "Benim İnsidentlerim", "exam": "AJAN SINAVI", "admin_panel": "UZMAN PANELİ", "solved_by_me": "Kapatılan İnsidentler", "open_tickets": "AÇIK İNSİDENTLER (BEKLEMEDE)", "mark_solved": "İNSİDENTİ KAPAT", "download_csv": "☁️ SİSTEM VERİSİNİ İNDİR (CSV)", "accept_ticket": "GÖREVİ KABUL ET", "my_active": "AKTİF GÖREVLERİM"}
 }
-st.sidebar.title("🌐 ASOIU Helpdesk")
-sel_lang = st.sidebar.radio("", ["AZE"], horizontal=True, label_visibility="collapsed")
+
+st.sidebar.title("🌐 Language / Dil")
+sel_lang = st.sidebar.radio("", ["AZE", "ENG", "RUS", "TR"], horizontal=True, label_visibility="collapsed")
 t = LANG[sel_lang]
 
 USERS_FILE = "data/users_db.csv"
@@ -75,22 +78,22 @@ def add_log(action, username="Sistem"):
     log_df.to_csv(LOGS_FILE, mode='a', header=not os.path.exists(LOGS_FILE), index=False)
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("📡 Sistem Statusu")
+st.sidebar.subheader("📡 System Status")
 st.sidebar.markdown("""
 <div style='font-size: 14px; color: #4A5568;'>
-    <b>Əsas Server:</b> <span style='color: #38A169;'>🟢 Aktiv</span><br>
-    <b>AI Mühərriki:</b> <span style='color: #3182CE;'>🧠 PRO AI (Confidence)</span><br>
-    <b>Baza Statusu:</b> <span style='color: #38A169;'>💾 Qorunur</span><br>
-    <b>Canlı Dəstək:</b> <span style='color: #3182CE;'>💬 Aktiv</span>
+    <b>Main Server:</b> <span style='color: #38A169;'>🟢 Online</span><br>
+    <b>AI Engine:</b> <span style='color: #3182CE;'>🧠 PRO NLP v8</span><br>
+    <b>Database:</b> <span style='color: #38A169;'>💾 Secured</span><br>
+    <b>Live Chat:</b> <span style='color: #3182CE;'>💬 Active</span>
 </div>
 """, unsafe_allow_html=True)
 
 if st.session_state.get('logged_in'):
     st.sidebar.markdown("---")
-    st.sidebar.subheader("👤 Profilim")
-    st.sidebar.write(f"**İstifadəçi:** {st.session_state.name}")
-    st.sidebar.write(f"**Səlahiyyət:** {st.session_state.role.upper()}")
-    st.sidebar.write(f"**Bölmə:** {st.session_state.dept}")
+    st.sidebar.subheader("👤 Profile")
+    st.sidebar.write(f"**ID:** {st.session_state.name}")
+    st.sidebar.write(f"**Role:** {st.session_state.role.upper()}")
+    st.sidebar.write(f"**Dept:** {st.session_state.dept}")
 
 def normalize_text(text):
     text = text.lower()
@@ -104,9 +107,6 @@ def normalize_text(text):
     for old, new in replacements.items(): text = text.replace(old, new)
     return text.strip()
 
-# ==========================================
-# 3. YÜKSƏK SÜRƏTLİ VƏ CALIBRATED NLP (CONFIDENCE SCORE)
-# ==========================================
 @st.cache_resource
 def initialize_system():
     os.makedirs('data', exist_ok=True)
@@ -143,14 +143,9 @@ def initialize_system():
 
     def train_new_model():
         df = pd.read_csv('data/tickets.csv')
-        
-        # PRO UPDATE: CalibratedClassifierCV əlavə edildi (Əminlik dərəcəsini faizlə hesablamaq üçün)
-        base_model = LinearSVC(C=1.5, class_weight='balanced', random_state=42, dual="auto", max_iter=2000)
-        calibrated_model = CalibratedClassifierCV(base_model, cv=3)
-        
         pipeline = Pipeline([
             ('tfidf', TfidfVectorizer(ngram_range=(1, 4), max_features=25000, sublinear_tf=True)), 
-            ('clf', calibrated_model) 
+            ('clf', LinearSVC(C=1.5, class_weight='balanced', random_state=42, dual="auto", max_iter=2000)) 
         ])
         pipeline.fit(df['ticket_text'], df['category'])
         return pipeline
@@ -166,7 +161,7 @@ def initialize_system():
             joblib.dump(model, 'helpdesk_classifier_model.pkl')
             return model
 
-with st.spinner("⚙️ AI Modeli Kalibrasiya Olunur (Əminlik Dərəcəsi Yüklənir)..."):
+with st.spinner("⚙️ AI Modeli və Baza Yüklənir... Zəhmət olmasa gözləyin."):
     model = initialize_system()
 
 def ensure_db_exists():
@@ -182,22 +177,20 @@ def ensure_db_exists():
             {"username": "kamran_muradov", "password": hash_password("admin"), "role": "super_admin", "name": "Kamran Muradov", "dept": "Bütün_Sistem"},
             {"username": "orxan_eliyev", "password": hash_password("123"), "role": "admin", "name": "Orxan Əliyev", "dept": "Avadanlıq"},
             {"username": "cavid_memmedov", "password": hash_password("123"), "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"}
-            
         ]).to_csv(USERS_FILE, index=False)
         add_log("Sistem bazası sıfırlandı")
         
     try:
         t_df = pd.read_csv(TICKETS_FILE)
-        if "AI_Eminlik" not in t_df.columns: raise ValueError("Format error")
+        if "Prioritet" not in t_df.columns: raise ValueError("Format error")
     except Exception:
-        # YENİ SÜTUN: AI_Eminlik
-        pd.DataFrame(columns=["Ticket_ID", "Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Prioritet", "Məsul_Şəxs", "Status", "AI_Eminlik"]).to_csv(TICKETS_FILE, index=False)
+        pd.DataFrame(columns=["Ticket_ID", "Tarix", "Göndərən", "Şikayət", "Kateqoriya", "Prioritet", "Məsul_Şəxs", "Status"]).to_csv(TICKETS_FILE, index=False)
 
 ensure_db_exists()
 
 def get_priority(category):
     if category in ["Təhlükəsizlik", "Məlumat_Bazası"]: return "🔴 Kritik"
-    elif category in ["Şəbəkə", "Hesab_Problemi", "Bilinmir"]: return "🟡 Yüksək"
+    elif category in ["Şəbəkə", "Hesab_Problemi"]: return "🟡 Yüksək"
     else: return "🟢 Normal"
 
 def smart_ai_autosolve(text):
@@ -250,7 +243,8 @@ if not st.session_state.logged_in:
                             st.session_state.update({"logged_in": True, "username": u['username'], "role": u['role'], "name": u['name'], "dept": u['dept']})
                             add_log("Sistemə daxil oldu", u['username'])
                             st.rerun()
-                        else: st.error("❌ Giriş xətası: İdentifikator və ya şifrə səhvdir.")
+                        else: 
+                            st.error("❌ Giriş xətası: İdentifikator və ya şifrə səhvdir.")
                 if st.button(f"❓ {t['forgot']}", type="primary"):
                     st.session_state.show_forgot_pass = True
                     st.rerun()
@@ -325,10 +319,7 @@ else:
                         else:
                             clean_input = normalize_text(user_input)
                             
-                            # HIBRID NLP & CONFIDENCE SCORE MƏNTİQİ
-                            keyword_matched = True
-                            confidence = 100.0
-                            
+                            # HIBRID NLP MƏNTİQİ
                             if any(w in clean_input for w in ["virus", "heker", "spam", "trojan", "reklam", "sifrelenib"]): pred_category = "Təhlükəsizlik"
                             elif any(w in clean_input for w in ["baza", "sql", "server", "1c", "oracle", "db"]): pred_category = "Məlumat_Bazası"
                             elif any(w in clean_input for w in ["sebeke", "internet", "wi-fi", "wifi", "lan", "kabel", "ping"]): pred_category = "Şəbəkə"
@@ -336,35 +327,23 @@ else:
                             elif any(w in clean_input for w in ["ekran", "klaviatura", "maus", "proyektor", "printer", "noutbuk", "komputer", "ram", "yandi"]): pred_category = "Avadanlıq"
                             elif any(w in clean_input for w in ["proqram", "word", "excel", "office", "windows", "update", "teams"]): pred_category = "Proqram_Təminatı"
                             else:
-                                keyword_matched = False
-                                # AI ÖZÜ TƏXMİN EDİR VƏ FAİZ ÇIXARIR
-                                probs = model.predict_proba([clean_input])[0]
-                                max_prob = max(probs)
-                                pred_category = model.classes_[probs.argmax()]
-                                confidence = round(max_prob * 100, 1)
+                                pred_category = model.predict([clean_input])[0]
                                 
-                                # ƏGƏR AI 50%-DƏN AZ ƏMİNDİRSƏ, RİSKƏ ATILMIR
-                                if confidence < 50.0:
-                                    pred_category = "Bilinmir"
-                            
                             priority = get_priority(pred_category)
                             ticket_id = f"TKT-{random.randint(10000, 99999)}"
-                            agent_mapping = {"Şəbəkə": "Şəbəkə Şöbəsi", "Avadanlıq": "Texniki Dəstək", "Hesab_Problemi": "Hesab Qeydiyyatı", "Proqram_Təminatı": "Proqram Təminatı", "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi", "Məlumat_Bazası": "Baza Administratoru", "Bilinmir": "Ümumi Şöbə (İnsan Dəstəyi Tələb Olunur)"}
+                            agent_mapping = {"Şəbəkə": "Şəbəkə Şöbəsi", "Avadanlıq": "Texniki Dəstək", "Hesab_Problemi": "Hesab Qeydiyyatı", "Proqram_Təminatı": "Proqram Təminatı", "Təhlükəsizlik": "Təhlükəsizlik Şöbəsi", "Məlumat_Bazası": "Baza Administratoru"}
                             assigned_dept = agent_mapping.get(pred_category, "Ümumi Şöbə")
                             ai_reply = smart_ai_autosolve(user_input)
                             
                             if ai_reply:
-                                new_t = pd.DataFrame([{"Ticket_ID": ticket_id, "Tarix": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Prioritet": priority, "Məsul_Şəxs": "AI 🤖", "Status": "Həll edildi", "AI_Eminlik": f"{confidence}%"}])
+                                new_t = pd.DataFrame([{"Ticket_ID": ticket_id, "Tarix": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Prioritet": priority, "Məsul_Şəxs": "AI 🤖", "Status": "Həll edildi"}])
                                 new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                                st.success(f"⚡ İnsident {ticket_id} | Şöbə: {pred_category} (Əminlik: {confidence}%)")
+                                st.success(f"⚡ İnsident {ticket_id} | Şöbə: {pred_category} | Prioritet: {priority}")
                                 st.info(ai_reply)
                             else:
-                                new_t = pd.DataFrame([{"Ticket_ID": ticket_id, "Tarix": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Prioritet": priority, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq", "AI_Eminlik": f"{confidence}%"}])
+                                new_t = pd.DataFrame([{"Ticket_ID": ticket_id, "Tarix": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Göndərən": st.session_state.username, "Şikayət": user_input, "Kateqoriya": pred_category, "Prioritet": priority, "Məsul_Şəxs": "Gözləyir", "Status": "Açıq"}])
                                 new_t.to_csv(TICKETS_FILE, mode='a', header=False, index=False)
-                                if pred_category == "Bilinmir":
-                                    st.warning(f"⚠️ İnsident {ticket_id} qeydə alındı, lakin AI mənanı tam anlaya bilmədi (Əminlik: {confidence}%). İnsan operatoru tərəfindən baxılacaq.")
-                                else:
-                                    st.success(f"✅ İnsident {ticket_id} Qeydə Alındı. Şöbə: {assigned_dept} (Əminlik: {confidence}%)")
+                                st.success(f"✅ İnsident {ticket_id} Qeydə Alındı. Şöbə: {assigned_dept}")
 
             with col_stat:
                 my_count = len(tickets_df[tickets_df['Göndərən'] == st.session_state.username])
@@ -404,16 +383,14 @@ else:
             col_main, col_stat = st.columns([3, 1])
             with col_main:
                 st.write(f"### 📬 {t['open_tickets']}")
-                open_tickets = tickets_df[(tickets_df["Kateqoriya"] == st.session_state.dept) | (tickets_df["Kateqoriya"] == "Bilinmir")]
-                open_tickets = open_tickets[open_tickets["Status"] == "Açıq"]
+                open_tickets = tickets_df[(tickets_df["Kateqoriya"] == st.session_state.dept) & (tickets_df["Status"] == "Açıq")]
                 
                 def color_priority(val):
                     color = '#E53E3E' if val == '🔴 Kritik' else '#DD6B20' if val == '🟡 Yüksək' else '#38A169'
                     return f'color: {color}; font-weight: bold'
                 
                 if not open_tickets.empty:
-                    # Yeni AI_Eminlik sütununu da göstəririk
-                    st.dataframe(open_tickets[['Ticket_ID', 'Tarix', 'Göndərən', 'Prioritet', 'Şikayət', 'AI_Eminlik']].style.map(color_priority, subset=['Prioritet']), use_container_width=True, hide_index=True)
+                    st.dataframe(open_tickets[['Ticket_ID', 'Tarix', 'Göndərən', 'Prioritet', 'Şikayət']].style.map(color_priority, subset=['Prioritet']), use_container_width=True, hide_index=True)
                     with st.form("accept_ticket_form"):
                         accept_id = st.selectbox("İcraya Götürüləcək İnsident:", open_tickets['Ticket_ID'].tolist())
                         submit_accept = st.form_submit_button(t['accept_ticket'], type="primary")
@@ -479,7 +456,7 @@ else:
                 col_chart2.plotly_chart(fig_line, use_container_width=True)
             
             st.markdown("---")
-            all_categories = ["Bütün Sorğular", "Şəbəkə", "Avadanlıq", "Hesab_Problemi", "Proqram_Təminatı", "Təhlükəsizlik", "Məlumat_Bazası", "Bilinmir"]
+            all_categories = ["Bütün Sorğular", "Şəbəkə", "Avadanlıq", "Hesab_Problemi", "Proqram_Təminatı", "Təhlükəsizlik", "Məlumat_Bazası"]
             cat_tabs = st.tabs([f"📂 {c}" for c in all_categories])
             
             def color_priority(val):
@@ -496,12 +473,47 @@ else:
                         st.dataframe(filtered_df.drop(columns=['Tarix_Gun'], errors='ignore').style.map(color_priority, subset=['Prioritet']), use_container_width=True, hide_index=True)
         
         with tab_users:
+            # SUPER ADMIN ÜÇÜN BİRBAŞA YENİ HESAB YARATMA FORMASI
+            with st.expander("➕ SİSTEMƏ YENİ İŞÇİ / İDARƏÇİ ƏLAVƏ ET", expanded=False):
+                with st.form("add_new_user_form"):
+                    col_u1, col_u2 = st.columns(2)
+                    with col_u1:
+                        new_a_name = st.text_input("Tam Ad (Məs: Əli Əliyev)")
+                        new_a_user = st.text_input("İstifadəçi adı (Məs: eli_eliyev)").lower()
+                        new_a_pass = st.text_input("Şifrə", type="password")
+                    with col_u2:
+                        new_a_role = st.selectbox("Səlahiyyət", ["user", "admin", "super_admin"])
+                        new_a_dept = st.selectbox("Şöbə (Yalnız adminlər üçün)", ["Yoxdur", "Şəbəkə", "Avadanlıq", "Hesab_Problemi", "Proqram_Təminatı", "Təhlükəsizlik", "Məlumat_Bazası", "Bütün_Sistem"])
+                    
+                    submit_new_admin = st.form_submit_button("Hesabı Yarat", type="primary")
+                    if submit_new_admin:
+                        if len(new_a_user) < 3 or len(new_a_pass) < 3:
+                            st.error("Məlumatlar çox qısadır!")
+                        else:
+                            users_db_check = pd.read_csv(USERS_FILE)
+                            if new_a_user in users_db_check['username'].values:
+                                st.error("Bu istifadəçi adı artıq mövcuddur!")
+                            else:
+                                new_record = pd.DataFrame([{
+                                    "username": new_a_user, 
+                                    "password": hash_password(new_a_pass), 
+                                    "role": new_a_role, 
+                                    "name": new_a_name, 
+                                    "dept": new_a_dept if new_a_role != 'user' else 'Yoxdur'
+                                }])
+                                new_record.to_csv(USERS_FILE, mode='a', header=False, index=False)
+                                add_log(f"Yeni hesab yaratdı ({new_a_role}: {new_a_user})", st.session_state.username)
+                                st.success(f"✅ {new_a_name} sistemə {new_a_role} olaraq əlavə edildi!")
+                                st.rerun()
+
             st.write("### 👥 Sistem İdentifikatorları (Hesablar)")
             users_db = pd.read_csv(USERS_FILE)
             safe_users_db = users_db.drop(columns=['password'])
+            
             st.markdown("#### 👨‍💻 İdarəçi Heyət (Admin / Super Admin)")
             staff_df = safe_users_db[safe_users_db['role'].isin(['admin', 'super_admin'])].reset_index(drop=True)
             st.dataframe(staff_df, use_container_width=True, hide_index=True)
+            
             st.markdown("---")
             st.markdown("#### 👤 Adi İstifadəçilər (Tələbə / İşçi)")
             users_only_df = safe_users_db[safe_users_db['role'] == 'user'].reset_index(drop=True)
@@ -517,8 +529,8 @@ else:
                 logs_df = pd.read_csv(LOGS_FILE)
                 logs_df = logs_df.sort_values(by="Tarix", ascending=False).reset_index(drop=True)
                 st.dataframe(logs_df, use_container_width=True, hide_index=True)
+                
                 csv_logs = logs_df.to_csv(index=False).encode('utf-8-sig')
                 st.download_button(label="☁️ Jurnalı Yüklə (CSV)", data=csv_logs, file_name=f"AUDIT_LOGS_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", type="secondary")
             else:
                 st.info("Sistem jurnalı hələ boşdur.")
-                
