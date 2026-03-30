@@ -182,6 +182,7 @@ def ensure_db_exists():
             {"username": "kamran_muradov", "password": hash_password("admin"), "role": "super_admin", "name": "Kamran Muradov", "dept": "Bütün_Sistem"},
             {"username": "orxan_eliyev", "password": hash_password("123"), "role": "admin", "name": "Orxan Əliyev", "dept": "Avadanlıq"},
             {"username": "cavid_memmedov", "password": hash_password("123"), "role": "admin", "name": "Cavid Məmmədov", "dept": "Şəbəkə"}
+            {"username": "hesenli_ismayil", "password": hash_password("123"), "role": "admin", "name": "Hesenli Ismayil", "dept": "Tehlukesizlik"}
         ]).to_csv(USERS_FILE, index=False)
         add_log("Sistem bazası sıfırlandı")
         
